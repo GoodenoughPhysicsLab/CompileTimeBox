@@ -17,6 +17,7 @@ void test_names() noexcept {
 void test_namedtuple() noexcept {
     constexpr auto nt = make_namedtuple<"hhh", "blaa">(1, "233hh");
     static_assert(::std::string_view{get<"blaa">(nt)} == "233hh");
+    static_assert(get<0>(nt) == 1);
 }
 
 int main() noexcept {

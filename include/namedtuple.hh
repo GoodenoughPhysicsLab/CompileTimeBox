@@ -103,5 +103,14 @@ consteval auto get(named_tuple<Names, Args...> nt) noexcept {
     }
 }
 
+template<::std::size_t N, ::std::size_t index = 0, typename Names, typename... Args>
+consteval auto get(named_tuple<Names, Args...> nt) noexcept {
+    if constexpr (index == N) {
+        return ::std::get<index>(nt.tuple_);
+    } else {
+        return get<N, index + 1>(nt);
+    }
+}
+
 } // namespace namedtuple
 
