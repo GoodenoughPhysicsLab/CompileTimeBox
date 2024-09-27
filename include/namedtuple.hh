@@ -26,12 +26,6 @@ constexpr bool operator==(::std::string_view lhs, template_str<N> const& rhs) no
     return rhs == lhs;
 }
 
-template<typename>
-constexpr bool is_tuple = false;
-
-template<typename... Args>
-constexpr bool is_tuple<::std::tuple<Args...>> = true;
-
 namespace names {
 
 template<details::template_str First, details::template_str... Rest>
@@ -93,6 +87,12 @@ struct named_tuple {
     }
 };
 
+template<details::template_str... Str, typename... Args>
+    requires (sizeof...(Str) == sizeof...(Args))
+constexpr auto make_namedtuple(Args&&... args) noexcept {
+    return named_tuple<names<Str...>, ::std::decay_t<Args>...>{::std::forward<Args>(args)...};
+}
+
 template<details::template_str str, ::std::size_t index = 0, typename Names, typename... Args>
     requires (details::names::is_names<Names>)
 consteval auto get(named_tuple<Names, Args...> nt) noexcept {
@@ -104,3 +104,4 @@ consteval auto get(named_tuple<Names, Args...> nt) noexcept {
 }
 
 } // namespace namedtuple
+

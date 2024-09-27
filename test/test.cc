@@ -1,4 +1,3 @@
-#include <string>
 #include "../include/namedtuple.hh"
 
 using namespace namedtuple;
@@ -16,8 +15,8 @@ void test_names() noexcept {
 }
 
 void test_namedtuple() noexcept {
-    constexpr auto nt = named_tuple<names<"hhh", "bla">, int, ::std::string>{1, "23333"};
-    static_assert(get<"bla">(nt) == "23333");
+    constexpr auto nt = make_namedtuple<"hhh", "blaa">(1, "233hh");
+    static_assert(::std::string_view{get<"blaa">(nt)} == "233hh");
 }
 
 int main() noexcept {
