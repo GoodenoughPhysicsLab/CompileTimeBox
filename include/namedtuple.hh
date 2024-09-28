@@ -1,3 +1,7 @@
+#if !__cpp_concepts >= 201907L
+#   error "`namedtuple` requires at least c++20"
+#endif
+
 #include <algorithm>
 #include <string_view>
 #include <tuple>
@@ -5,10 +9,21 @@
 
 namespace namedtuple::details {
 
-template<::std::size_t N> // TODO: support other encoding like utf-8
+template<typename Char>
+concept is_char =
+    std::is_same_v<Char, char>
+#if __cpp_char8_t >= 201811L
+    || ::std::is_same_v<Char, char8_t>
+#endif
+    || std::is_same_v<Char, char16_t>
+    || std::is_same_v<Char, char32_t>
+    || std::is_same_v<Char, wchar_t>;
+
+
+template<::std::size_t N, is_char Char>
 struct template_str {
-    char str[N]{};
-    constexpr template_str(char const(&arr)[N]) {
+    Char str[N]{};
+    constexpr template_str(Char const(&arr)[N]) {
         ::std::copy(arr, arr + N, str);
     }
 
@@ -16,13 +31,13 @@ struct template_str {
         return ::std::equal(str, str + N, other.str);
     }
 
-    constexpr bool operator==(::std::string_view other) const noexcept {
+    constexpr bool operator==(::std::basic_string_view<Char> other) const noexcept {
         return other == str;
     }
 };
 
-template<::std::size_t N>
-constexpr bool operator==(::std::string_view lhs, template_str<N> const& rhs) noexcept {
+template<::std::size_t N, is_char Char>
+constexpr bool operator==(::std::string_view lhs, template_str<N, Char> const& rhs) noexcept {
     return rhs == lhs;
 }
 
@@ -41,13 +56,15 @@ struct names<Str> {
 };
 
 template<typename>
-constexpr bool is_names = false;
+constexpr bool is_names_ = false;
 
 template<details::template_str... Str>
-constexpr bool is_names<names<Str...>> = true;
+constexpr bool is_names_<names<Str...>> = true;
 
-template<::std::size_t N, typename Names, ::std::size_t index = 0>
-    requires (is_names<Names>)
+template<typename T>
+concept is_names = is_names_<T>;
+
+template<::std::size_t N, is_names Names, ::std::size_t index = 0>
 consteval ::std::string_view get_name() noexcept {
     if constexpr (index == N) {
         return Names::current_val;
@@ -57,8 +74,7 @@ consteval ::std::string_view get_name() noexcept {
     }
 }
 
-template<typename Names, ::std::size_t counter = 0>
-    requires (is_names<Names>)
+template<is_names Names, ::std::size_t counter = 0>
 consteval ::std::size_t get_size() noexcept {
     if constexpr (::std::is_void_v<typename Names::next_name>) {
         return counter + 1;
@@ -76,8 +92,8 @@ namespace namedtuple {
 template<details::template_str... Args>
 using names = details::names::names<Args...>;
 
-template<typename Names, typename... Args>
-    requires (details::names::is_names<Names>)
+template<details::names::is_names Names, typename... Args>
+    requires (details::names::get_size<Names>() == sizeof...(Args))
 struct named_tuple {
     using names = Names;
     ::std::tuple<Args...> tuple_;
@@ -93,9 +109,9 @@ constexpr auto make_namedtuple(Args&&... args) noexcept {
     return named_tuple<names<Str...>, ::std::decay_t<Args>...>{::std::forward<Args>(args)...};
 }
 
-template<details::template_str str, ::std::size_t index = 0, typename Names, typename... Args>
-    requires (details::names::is_names<Names>)
+template<details::template_str str, ::std::size_t index = 0, details::names::is_names Names, typename... Args>
 consteval auto get(named_tuple<Names, Args...> nt) noexcept {
+    static_assert(index < details::names::get_size<Names>(), "index out of range");
     if constexpr (details::names::get_name<index, Names>() == str) {
         return ::std::get<index>(nt.tuple_);
     } else {
@@ -103,8 +119,9 @@ consteval auto get(named_tuple<Names, Args...> nt) noexcept {
     }
 }
 
-template<::std::size_t N, ::std::size_t index = 0, typename Names, typename... Args>
+template<::std::size_t N, ::std::size_t index = 0, details::names::is_names Names, typename... Args>
 consteval auto get(named_tuple<Names, Args...> nt) noexcept {
+    static_assert(index < details::names::get_size<Names>(), "index out of range");
     if constexpr (index == N) {
         return ::std::get<index>(nt.tuple_);
     } else {

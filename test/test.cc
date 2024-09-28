@@ -1,9 +1,11 @@
 #include "../include/namedtuple.hh"
+#include <string_view>
 
 using namespace namedtuple;
 
 void test_template_str() noexcept {
     static_assert(::std::string_view{"abc"} == details::template_str{"abc"});
+    static_assert(::std::u8string_view{u8"abc"} == details::template_str{u8"abc"});
 }
 
 void test_names() noexcept {
