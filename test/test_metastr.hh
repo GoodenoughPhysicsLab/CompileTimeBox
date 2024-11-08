@@ -19,6 +19,11 @@ inline void test_metastr() noexcept {
     static_assert(metastr::metastr{"abc"} != ::std::u8string_view{u8"abcd"});
 }
 
+inline void test_concat() noexcept {
+    static_assert(metastr::concat("abc", "def") == metastr::metastr{"abcdef"});
+    static_assert(metastr::concat(u8"abc", u8"def", u8"233") == metastr::metastr{"abcdef233"});
+}
+
 template<metastr::metastr Str>
 class Test {};
 
