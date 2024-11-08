@@ -21,7 +21,10 @@ inline void test_metastr() noexcept {
 
 inline void test_concat() noexcept {
     static_assert(metastr::concat("abc", "def") == metastr::metastr{"abcdef"});
-    static_assert(metastr::concat(u8"abc", u8"def", u8"233") == metastr::metastr{"abcdef233"});
+    static_assert(
+        metastr::concat(u8"abc", u8"def", u8"2333", u8"滑稽")
+        == metastr::metastr{u8"abcdef2333滑稽"}
+    );
 }
 
 template<metastr::metastr Str>
