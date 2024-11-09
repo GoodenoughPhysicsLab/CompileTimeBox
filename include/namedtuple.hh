@@ -74,8 +74,12 @@ constexpr auto make_namedtuple(Args&&... args) noexcept {
     return namedtuple<names<Str...>, ::std::decay_t<Args>...>{::std::forward<Args>(args)...};
 }
 
+/* get namedtuple element by name
+ *
+ * Usage: get<"name">(nt)
+ */
 template<metastr::metastr str, ::std::size_t index = 0, details::is_names Names, typename... Args>
-consteval auto get(namedtuple<Names, Args...> nt) noexcept {
+constexpr auto get(namedtuple<Names, Args...> nt) noexcept {
     static_assert(index < details::get_size<Names>(), "index out of range");
     if constexpr (details::get_name<index, Names>() == str) {
         return ::std::get<index>(nt.tuple);
@@ -84,9 +88,28 @@ consteval auto get(namedtuple<Names, Args...> nt) noexcept {
     }
 }
 
+/* get namedtuple element by index
+ *
+ * Usage: get<1>(nt)
+ */
 template<::std::size_t N, details::is_names Names, typename... Args>
-consteval auto get(namedtuple<Names, Args...> nt) noexcept {
+constexpr auto get(namedtuple<Names, Args...> nt) noexcept {
     return ::std::get<N>(nt.tuple);
 }
 
 } // namespace namedtuple
+
+/* C++17 structured binding support
+ */
+namespace std {
+
+template<::namedtuple::details::is_names Names, typename... Args>
+struct tuple_size<::namedtuple::namedtuple<Names, Args...>>
+    : public ::std::integral_constant<::std::size_t, ::namedtuple::details::get_size<Names>()> {};
+
+template<::std::size_t N, namedtuple::details::is_names Names, typename... Args>
+struct tuple_element<N, ::namedtuple::namedtuple<Names, Args...>> {
+    using type = decltype(::std::get<N>(::std::declval<::namedtuple::namedtuple<Names, Args...>>().tuple));
+};
+
+}

@@ -4,6 +4,9 @@
 
 inline void test_metastr() noexcept {
     static_assert(::std::u8string_view{u8"abc"} == metastr::metastr{"abc"});
+    static_assert(metastr::metastr{"abc"} == "abc");
+    static_assert(metastr::metastr{"abc"} != "ab");
+    static_assert(metastr::metastr{"abc"} != "abcd");
     static_assert(metastr::metastr{"abc"} == metastr::metastr{"abc"});
     static_assert(metastr::metastr{"abc"} != metastr::metastr{"abcd"});
     static_assert(metastr::metastr{"abc"} != metastr::metastr{"ab"});

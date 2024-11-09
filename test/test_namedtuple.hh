@@ -15,5 +15,5 @@ inline void test_namedtuple() noexcept {
     constexpr auto nt = namedtuple::make_namedtuple<u8"hhh", "blaa">(1, u8"233hh");
     static_assert(::std::u8string_view{get<"blaa">(nt)} == u8"233hh");
     static_assert(get<0>(nt) == 1);
-    // auto [a, b] = nt; // TODO: will support
+    [[maybe_unused]] auto [a, b]{nt};
 }
