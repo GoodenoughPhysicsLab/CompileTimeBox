@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef __cpp_concepts
-#   error "This library requires C++20 concepts"
+    #error "This library requires C++20 concepts"
 #endif
 
 #include <cstddef>
@@ -9,8 +9,8 @@
 #include <type_traits>
 
 #ifndef METASTR_N_STL_SUPPORT
-#   include <string>
-#   include <string_view>
+    #include <string>
+    #include <string_view>
 #endif
 
 namespace metastr {
@@ -39,8 +39,8 @@ struct metastr {
         ::std::copy(arr, arr + N - 1, str);
     }
 
-    template<is_char Char_other, ::std::size_t N_r>
-    constexpr bool operator==(metastr<Char_other, N_r> const& other) const noexcept {
+    template<is_char Char_r, ::std::size_t N_r>
+    constexpr bool operator==(metastr<Char_r, N_r> const& other) const noexcept {
         if constexpr (N == N_r) {
             return ::std::equal(str, str + N - 1, other.str);
         } else {
@@ -91,15 +91,38 @@ constexpr bool is_metastr_<metastr<Char, N>> = true;
 template<typename T>
 concept is_metastr = details::is_metastr_<::std::remove_cvref_t<T>>;
 
-template<is_char... Char, ::std::size_t... N>
-    requires (sizeof...(Char) == sizeof...(N))
-constexpr auto concat(Char const(&... strs)[N]) noexcept {
-    return concat(metastr{strs}...);
+namespace details {
+
+template<typename>
+constexpr bool is_c_str_ = false;
+
+template<is_char Char, ::std::size_t N>
+constexpr bool is_c_str_<Char[N]> = true;
+
+template<typename T>
+concept is_c_str = is_c_str_<::std::remove_cvref_t<T>>;
+
+template<typename T>
+concept can_concat = is_metastr<T> || is_c_str<T>;
+
+} // namespace details
+
+template<details::can_concat... T>
+constexpr auto concat(T const&... strs) noexcept {
+    return concat(
+        [strs] {
+            if constexpr (is_metastr<T>) {
+                return strs;
+            } else { // details::is_c_str<T>
+                return metastr{strs};
+            }
+        }()...
+    );
 }
 
 template<is_metastr Str1, is_metastr... Strs>
     requires (::std::is_same_v<typename Str1::char_type, typename Strs::char_type> && ...)
-constexpr auto concat(Str1 const&& str1, Strs const&&... strs) noexcept {
+constexpr auto concat(Str1 const& str1, Strs const&... strs) noexcept {
     typename Str1::char_type tmp_[Str1::len + (Strs::len + ...) - sizeof...(Strs)]{};
     auto res = metastr{tmp_};
     constexpr decltype(Str1::len) lens[]{Str1::len - 1, (Strs::len - 1)...};

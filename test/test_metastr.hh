@@ -20,7 +20,16 @@ inline void test_metastr() noexcept {
 }
 
 inline void test_concat() noexcept {
+    static_assert(
+        metastr::concat(metastr::metastr{"abc"}, metastr::metastr{"def"})
+        == metastr::metastr{"abcdef"}
+    );
+    constexpr auto str1 = metastr::metastr{"abc"};
+    constexpr auto str2 = metastr::metastr{"def"};
     static_assert(metastr::concat("abc", "def") == metastr::metastr{"abcdef"});
+    static_assert(metastr::concat(str1, "def") == metastr::metastr{"abcdef"});
+    static_assert(metastr::concat("abc", str2) == metastr::metastr{"abcdef"});
+    static_assert(metastr::concat(str1, str2) == metastr::metastr{"abcdef"});
     static_assert(
         metastr::concat(u8"abc", u8"def", u8"2333", u8"滑稽")
         == metastr::metastr{u8"abcdef2333滑稽"}
