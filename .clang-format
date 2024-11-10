@@ -1,0 +1,45 @@
+---
+BasedOnStyle: Google
+IndentWidth: 4
+ColumnLimit: 120
+BreakBeforeBraces: Attach
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+IndentCaseLabels: false
+AllowShortCaseLabelsOnASingleLine: false
+SpacesBeforeTrailingComments: 2
+BinPackParameters: true
+BinPackArguments: true
+
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
+AlignEscapedNewlines: DontAlign
+AlignConsecutiveMacros: false
+
+UseTab: Never
+SeparateDefinitionBlocks: Always
+SpaceAfterTemplateKeyword: false
+FixNamespaceComments: true
+
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterOverloadedOperator: false
+  AfterRequiresInExpression: false
+  AfterRequiresInClause: true
+
+SortIncludes: CaseSensitive
+
+# Special formatting for templates and macros
+MacroBlockBegin: ''
+MacroBlockEnd: ''
+IndentPPDirectives: BeforeHash
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# Disable some Google-specific formatting rules
+DerivePointerAlignment: false
+
+NamespaceIndentation: None
+
+# Pointer and reference alignment
+PointerAlignment: Left

@@ -1,7 +1,7 @@
 #pragma once
 
 #if defined(_MSC_VER) && !defined(__clang__)
-#include <cstdlib>
+    #include <cstdlib>
 #endif
 
 namespace fatal_error {
@@ -16,14 +16,14 @@ inline void terminate() noexcept {
     // https://llvm.org/doxygen/Compiler_8h_source.html
 #if defined(__has_builtin)
     #if __has_builtin(__builtin_trap)
-	__builtin_trap();
+    __builtin_trap();
     #elif __has_builtin(__builtin_abort)
-	__builtin_abort();
+    __builtin_abort();
     #else
-	::std::abort();
+    ::std::abort();
     #endif
 #else
-	::std::abort();
+    ::std::abort();
 #endif
 }
 
@@ -34,11 +34,11 @@ inline void terminate() noexcept {
 #endif
 [[noreturn]]
 inline void unreachable() noexcept {
-#if defined(_MSC_VER) && !defined(__clang__) // MSVC
-	__assume(false);
-#else // GCC, Clang
-	__builtin_unreachable();
+#if defined(_MSC_VER) && !defined(__clang__)  // MSVC
+    __assume(false);
+#else  // GCC, Clang
+    __builtin_unreachable();
 #endif
 }
 
-} // namespace fatal_error
+}  // namespace fatal_error

@@ -1,11 +1,12 @@
 #pragma once
 
 #if !__cpp_concepts >= 201907L
-#   error "`namedtuple` requires at least c++20"
+    #error "namedtuple requires at least c++20"
 #endif
 
 #include <tuple>
 #include <type_traits>
+
 #include "metastr.hh"
 
 namespace namedtuple::details {
@@ -50,7 +51,7 @@ consteval ::std::size_t get_size() noexcept {
     }
 }
 
-} // namespace namedtuple::details
+}  // namespace namedtuple::details
 
 namespace namedtuple {
 
@@ -97,7 +98,7 @@ constexpr auto get(namedtuple<Names, Args...> nt) noexcept {
     return ::std::get<N>(nt.tuple);
 }
 
-} // namespace namedtuple
+}  // namespace namedtuple
 
 /* C++17 structured binding support
  */
@@ -112,4 +113,4 @@ struct tuple_element<N, ::namedtuple::namedtuple<Names, Args...>> {
     using type = decltype(::std::get<N>(::std::declval<::namedtuple::namedtuple<Names, Args...>>().tuple));
 };
 
-}
+}  // namespace std

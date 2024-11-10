@@ -4,8 +4,8 @@
     #error "This library requires C++20 concepts"
 #endif
 
-#include <cstddef>
 #include <algorithm>
+#include <cstddef>
 #include <type_traits>
 
 #ifndef METASTR_N_STL_SUPPORT
@@ -16,14 +16,11 @@
 namespace metastr {
 
 template<typename Char>
-concept is_char =
-    std::is_same_v<Char, char>
-    || std::is_same_v<Char, wchar_t>
+concept is_char = std::is_same_v<Char, char> || std::is_same_v<Char, wchar_t>
 #if __cpp_char8_t >= 201811L
-    || ::std::is_same_v<Char, char8_t>
+                  || ::std::is_same_v<Char, char8_t>
 #endif
-    || std::is_same_v<Char, char16_t>
-    || std::is_same_v<Char, char32_t>;
+                  || std::is_same_v<Char, char16_t> || std::is_same_v<Char, char32_t>;
 
 /* metastr
  *   A string literal that can be used in template.
@@ -31,11 +28,11 @@ concept is_char =
  */
 template<is_char Char, ::std::size_t N>
 struct metastr {
-    using char_type = Char; // export
-    static constexpr auto len{N}; // export
+    using char_type = Char;
+    static constexpr auto len{N};
     Char str[N]{};
 
-    constexpr metastr(Char const(&arr)[N]) {
+    constexpr metastr(Char const (&arr)[N]) {
         ::std::copy(arr, arr + N - 1, str);
     }
 
@@ -49,7 +46,7 @@ struct metastr {
     }
 
     template<is_char Char_r, ::std::size_t N_r>
-    constexpr bool operator==(Char_r const(&other)[N_r]) const noexcept {
+    constexpr bool operator==(Char_r const (&other)[N_r]) const noexcept {
         if constexpr (N == N_r) {
             return ::std::equal(str, str + N - 1, other);
         } else {
@@ -86,7 +83,7 @@ constexpr bool is_metastr_ = false;
 template<is_char Char, ::std::size_t N>
 constexpr bool is_metastr_<metastr<Char, N>> = true;
 
-} // namespace detalis
+}  // namespace details
 
 template<typename T>
 concept is_metastr = details::is_metastr_<::std::remove_cvref_t<T>>;
@@ -105,19 +102,17 @@ concept is_c_str = is_c_str_<::std::remove_cvref_t<T>>;
 template<typename T>
 concept can_concat = is_metastr<T> || is_c_str<T>;
 
-} // namespace details
+}  // namespace details
 
 template<details::can_concat... T>
 constexpr auto concat(T const&... strs) noexcept {
-    return concat(
-        [strs] {
-            if constexpr (is_metastr<T>) {
-                return strs;
-            } else { // details::is_c_str<T>
-                return metastr{strs};
-            }
-        }()...
-    );
+    return concat([strs] {
+        if constexpr (is_metastr<T>) {
+            return strs;
+        } else {  // details::is_c_str<T>
+            return metastr{strs};
+        }
+    }()...);
 }
 
 template<is_metastr Str1, is_metastr... Strs>
@@ -132,4 +127,4 @@ constexpr auto concat(Str1 const& str1, Strs const&... strs) noexcept {
     return res;
 }
 
-} // namespace metastr
+}  // namespace metastr
