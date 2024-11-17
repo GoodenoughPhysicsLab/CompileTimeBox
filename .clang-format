@@ -11,8 +11,10 @@ AllowShortCaseLabelsOnASingleLine: false
 SpacesBeforeTrailingComments: 2
 BinPackParameters: true
 BinPackArguments: true
+IndentAccessModifiers: false
+AccessModifierOffset: -4
 
-AlignConsecutiveAssignments: None
+AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: None
 AlignEscapedNewlines: DontAlign
 AlignConsecutiveMacros: false

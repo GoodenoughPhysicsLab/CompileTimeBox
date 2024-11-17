@@ -1,4 +1,4 @@
-# namedtuple
+# metastr & namedtuple
 
 in some languages like Python, `namedtuple` is a built-in feature.
 
@@ -21,7 +21,7 @@ void example() noexcept {
 show more usage in [test_namedtuple.hh](./test/test_namedtuple.hh).
 
 ## metastr
-To support strings in template, I wrote `metastr`.
+To support use string in compile time (even template), I wrote `metastr`.
 ```cpp
 #include <metastr.hh>
 

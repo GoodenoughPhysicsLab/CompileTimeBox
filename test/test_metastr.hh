@@ -2,12 +2,25 @@
 
 #include "../include/metastr.hh"
 
-consteval void test_metastr() noexcept {
+inline void test_metastr_init() noexcept {
+    constexpr auto _1 = metastr::metastr{"abc"};
+    constexpr auto _2 = metastr::metastr{L"abc"};
+    constexpr auto _3 = metastr::metastr{u8"abc"};
+    constexpr auto _4 = metastr::metastr{u"abc"};
+    constexpr auto _5 = metastr::metastr{U"abc"};
+    static_assert(_1 == _2);
+    static_assert(_1 == _3);
+    static_assert(_1 == _4);
+    static_assert(_1 == _5);
+}
+
+inline void test_metastr_eq() noexcept {
     static_assert(::std::u8string_view{u8"abc"} == metastr::metastr{"abc"});
     static_assert(metastr::metastr{"abc"} == "abc");
     static_assert(metastr::metastr{"abc"} != "ab");
     static_assert(metastr::metastr{"abc"} != "abcd");
     static_assert(metastr::metastr{"abc\0\0"} == "abc");
+    static_assert(metastr::metastr{"abc"} == "abc\0\0");
     static_assert(metastr::metastr{"abc"} == metastr::metastr{"abc"});
     static_assert(metastr::metastr{"abc"} == metastr::metastr{"abc\0\0"});
     static_assert(metastr::metastr{"abc"} != metastr::metastr{"abcd"});
@@ -42,6 +55,14 @@ consteval void test_concat() noexcept {
         metastr::concat(u8"abc", u8"def", u8"2333", u8"滑稽")
         == metastr::metastr{u8"abcdef2333滑稽"}
     );
+}
+
+inline void test_code_cvt() noexcept {
+    static_assert(metastr::metastr{U"测逝"} != u8"测逝");
+    static_assert(metastr::code_cvt<char8_t>(metastr::metastr{U"测逝"}) == u8"测逝");
+    static_assert(metastr::code_cvt<char8_t>(metastr::metastr{U"测逝"}) != U"测逝");
+    static_assert(metastr::code_cvt<char8_t>(metastr::metastr{u"测逝"}) == u8"测逝");
+    static_assert(metastr::code_cvt<char8_t>(metastr::metastr{u"测逝"}) != u"测逝");
 }
 
 template<metastr::metastr Str>

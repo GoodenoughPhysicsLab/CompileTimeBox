@@ -30,7 +30,7 @@ template<metastr::metastr... Str>
 constexpr bool is_names_<names<Str...>> = true;
 
 template<typename T>
-concept is_names = is_names_<T>;
+concept is_names = is_names_<::std::remove_cvref_t<T>>;
 
 template<::std::size_t N, is_names Names, ::std::size_t index_ = 0>
 consteval auto get_name() noexcept {
