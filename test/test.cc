@@ -6,5 +6,6 @@
 #include "test_namedtuple.hh"
 
 int main() noexcept {
+    runtime_test_metastr_eq();
     return 0;
 }

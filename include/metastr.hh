@@ -184,12 +184,14 @@ constexpr auto utf32to8(metastr<Char, N> const& u32str) noexcept {
     auto index = ::std::size_t{};
     for (auto u32chr : u32str.str) {
 #ifndef NDEBUG
+        // clang-format off
         if (u32chr > details::transcoding::CODE_POINT_MAX
             || u32chr >= details::transcoding::LEAD_SURROGATE_MIN
             && u32chr <= details::transcoding::TRAIL_SURROGATE_MAX) [[unlikely]]
         {
             fatal_error::terminate();
         }
+        // clang-format on
 #endif  // NDEBUG
 
         if (u32chr < 0x80) {
@@ -328,17 +330,27 @@ concept is_c_str = is_c_str_<::std::remove_cvref_t<T>>;
 template<typename T>
 concept can_concat = is_metastr<T> || is_c_str<T>;
 
+template<can_concat T>
+constexpr auto concat_helper(T const& str) noexcept {
+    if constexpr (is_metastr<T>) {
+        return str;
+    } else if constexpr (is_c_str<T>) {
+        return metastr{str};
+    } else {
+        // InternalError: please bug-report
+#ifndef NDEBUG
+        fatal_error::terminate();
+#else
+        fatal_error::unreachable();
+#endif
+    }
+}
+
 }  // namespace details
 
 template<details::can_concat... T>
 [[nodiscard]] constexpr auto concat(T const&... strs) noexcept {
-    return concat([strs] {
-        if constexpr (is_metastr<T>) {
-            return strs;
-        } else {  // details::is_c_str<T>
-            return metastr{strs};
-        }
-    }()...);
+    return concat(details::concat_helper(strs)...);
 }
 
 template<is_metastr Str1, is_metastr... Strs>

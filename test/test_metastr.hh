@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include "../include/metastr.hh"
 
 inline void test_metastr_init() noexcept {
@@ -29,15 +30,18 @@ inline void test_metastr_eq() noexcept {
     static_assert(u8"ab" != metastr::metastr{"abc"});
     static_assert(u8"abcd" != metastr::metastr{"abc"});
     static_assert(u"滑稽" != metastr::metastr{u8"滑稽"}); //NOTE: fucking encoding
-    static_assert(metastr::metastr{"abc"} == ::std::u8string{u8"abc"});
-    static_assert(metastr::metastr{"abc\0"} == ::std::u8string{u8"abc"});
-    static_assert(metastr::metastr{"abc"} != ::std::u8string{u8"ab"});
-    static_assert(metastr::metastr{"abc"} != ::std::u8string{u8"abcd"});
-    static_assert(metastr::metastr{"abc"} == ::std::u8string_view{u8"abc"});
-    static_assert(metastr::metastr{"abc\0\0"} == ::std::u8string_view{u8"abc"});
-    static_assert(metastr::metastr{"abc"} == ::std::u8string_view{u8"abc\0"});
-    static_assert(metastr::metastr{"abc"} != ::std::u8string_view{u8"ab"});
-    static_assert(metastr::metastr{"abc"} != ::std::u8string_view{u8"abcd"});
+}
+
+inline void runtime_test_metastr_eq() noexcept {
+    assert(metastr::metastr{"abc"} == ::std::u8string{u8"abc"});
+    assert(metastr::metastr{"abc\0"} == ::std::u8string{u8"abc"});
+    assert(metastr::metastr{"abc"} != ::std::u8string{u8"ab"});
+    assert(metastr::metastr{"abc"} != ::std::u8string{u8"abcd"});
+    assert(metastr::metastr{"abc"} == ::std::u8string_view{u8"abc"});
+    assert(metastr::metastr{"abc\0\0"} == ::std::u8string_view{u8"abc"});
+    assert(metastr::metastr{"abc"} == ::std::u8string_view{u8"abc\0"});
+    assert(metastr::metastr{"abc"} != ::std::u8string_view{u8"ab"});
+    assert(metastr::metastr{"abc"} != ::std::u8string_view{u8"abcd"});
 }
 
 consteval void test_concat() noexcept {

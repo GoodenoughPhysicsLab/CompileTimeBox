@@ -1,0 +1,34 @@
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  test_without_simd:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-13, macos-14]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build tests
+      run: |
+        cmake -S test -B build -Wno-dev
+        cmake --build build
+
+    - name: Run tests
+      run: |
+        cd build
+        ctest -C Debug
+
+    - name: test output
+      if: failure() && matrix.os == 'windows-latest'
+      run: |
+        type build\Testing\Temporary\LastTest.log
+
+    - name: test output
+      if: failure() && matrix.os != 'windows-latest'
+      run: |
+        cat build/Testing/Temporary/LastTest.log
