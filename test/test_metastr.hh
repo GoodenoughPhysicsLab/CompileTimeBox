@@ -2,12 +2,14 @@
 
 #include "../include/metastr.hh"
 
-inline void test_metastr() noexcept {
+consteval void test_metastr() noexcept {
     static_assert(::std::u8string_view{u8"abc"} == metastr::metastr{"abc"});
     static_assert(metastr::metastr{"abc"} == "abc");
     static_assert(metastr::metastr{"abc"} != "ab");
     static_assert(metastr::metastr{"abc"} != "abcd");
+    static_assert(metastr::metastr{"abc\0\0"} == "abc");
     static_assert(metastr::metastr{"abc"} == metastr::metastr{"abc"});
+    static_assert(metastr::metastr{"abc"} == metastr::metastr{"abc\0\0"});
     static_assert(metastr::metastr{"abc"} != metastr::metastr{"abcd"});
     static_assert(metastr::metastr{"abc"} != metastr::metastr{"ab"});
     static_assert(u8"abc" == metastr::metastr{"abc"});
@@ -15,14 +17,17 @@ inline void test_metastr() noexcept {
     static_assert(u8"abcd" != metastr::metastr{"abc"});
     static_assert(u"滑稽" != metastr::metastr{u8"滑稽"}); //NOTE: fucking encoding
     static_assert(metastr::metastr{"abc"} == ::std::u8string{u8"abc"});
+    static_assert(metastr::metastr{"abc\0"} == ::std::u8string{u8"abc"});
     static_assert(metastr::metastr{"abc"} != ::std::u8string{u8"ab"});
     static_assert(metastr::metastr{"abc"} != ::std::u8string{u8"abcd"});
     static_assert(metastr::metastr{"abc"} == ::std::u8string_view{u8"abc"});
+    static_assert(metastr::metastr{"abc\0\0"} == ::std::u8string_view{u8"abc"});
+    static_assert(metastr::metastr{"abc"} == ::std::u8string_view{u8"abc\0"});
     static_assert(metastr::metastr{"abc"} != ::std::u8string_view{u8"ab"});
     static_assert(metastr::metastr{"abc"} != ::std::u8string_view{u8"abcd"});
 }
 
-inline void test_concat() noexcept {
+consteval void test_concat() noexcept {
     static_assert(
         metastr::concat(metastr::metastr{"abc"}, metastr::metastr{"def"})
         == metastr::metastr{"abcdef"}
@@ -42,6 +47,6 @@ inline void test_concat() noexcept {
 template<metastr::metastr Str>
 class Test {};
 
-inline void test_metastr_in_template() noexcept {
+consteval void test_metastr_in_template() noexcept {
     [[maybe_unused]] constexpr auto _ = Test<"abc">{};
 }

@@ -37,32 +37,64 @@ struct metastr {
     }
 
     template<is_char Char_r, ::std::size_t N_r>
-    constexpr bool operator==(metastr<Char_r, N_r> const& other) const noexcept {
-        if constexpr (N == N_r) {
-            return ::std::equal(str, str + N - 1, other.str);
+    constexpr bool operator==(Char_r const (&other)[N_r]) const noexcept {
+        if constexpr (N <= N_r) {
+            if (!::std::equal(this->str, this->str + N - 2, other)) {
+                return false;
+            }
+            for (::std::size_t i{N - 1}; i < N_r; ++i) {
+                if (other[i] != '\0') {
+                    return false;
+                }
+            }
+            return true;
         } else {
-            return false;
+            if (!::std::equal(other, other + N_r - 2, this->str)) {
+                return false;
+            }
+            for (::std::size_t i{N_r - 1}; i < N; ++i) {
+                if (this->str[i] != '\0') {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
     template<is_char Char_r, ::std::size_t N_r>
-    constexpr bool operator==(Char_r const (&other)[N_r]) const noexcept {
-        if constexpr (N == N_r) {
-            return ::std::equal(str, str + N - 1, other);
-        } else {
-            return false;
-        }
+    constexpr bool operator==(metastr<Char_r, N_r> const& other) const noexcept {
+        return *this == other.str;
     }
 
 #ifndef METASTR_N_STL_SUPPORT
     template<is_char Char_r>
-    constexpr bool operator==(::std::basic_string<Char_r> const& other) const noexcept {
-        return ::std::equal(this->str, this->str + N - 1, other.begin(), other.end());
+    constexpr bool operator==(::std::basic_string_view<Char_r> const& other) const noexcept {
+        if (N <= other.size()) {
+            if (!::std::equal(this->str, this->str + N - 2, other.begin())) {
+                return false;
+            }
+            for (::std::size_t i{N - 1}; i < other.size(); ++i) {
+                if (other[i] != '\0') {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            if (!::std::equal(other.begin(), other.end() - 1, this->str)) {
+                return false;
+            }
+            for (::std::size_t i{other.size()}; i < N; ++i) {
+                if (this->str[i] != '\0') {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
     template<is_char Char_r>
-    constexpr bool operator==(::std::basic_string_view<Char_r> const other) const noexcept {
-        return ::std::equal(this->str, this->str + N - 1, other.begin(), other.end());
+    constexpr bool operator==(::std::basic_string<Char_r> const other) const noexcept {
+        return *this == ::std::basic_string_view<Char_r>{other};
     }
 
     constexpr operator ::std::basic_string<Char>() const noexcept {
@@ -105,7 +137,7 @@ concept can_concat = is_metastr<T> || is_c_str<T>;
 }  // namespace details
 
 template<details::can_concat... T>
-constexpr auto concat(T const&... strs) noexcept {
+[[nodiscard]] constexpr auto concat(T const&... strs) noexcept {
     return concat([strs] {
         if constexpr (is_metastr<T>) {
             return strs;
@@ -117,8 +149,8 @@ constexpr auto concat(T const&... strs) noexcept {
 
 template<is_metastr Str1, is_metastr... Strs>
     requires (::std::is_same_v<typename Str1::char_type, typename Strs::char_type> && ...)
-constexpr auto concat(Str1 const& str1, Strs const&... strs) noexcept {
-    typename Str1::char_type tmp_[Str1::len + (Strs::len + ...) - sizeof...(Strs)]{};
+[[nodiscard]] constexpr auto concat(Str1 const& str1, Strs const&... strs) noexcept {
+    constexpr typename Str1::char_type tmp_[Str1::len + (Strs::len + ...) - sizeof...(Strs)]{};
     auto res = metastr{tmp_};
     constexpr decltype(Str1::len) lens[]{Str1::len - 1, (Strs::len - 1)...};
     ::std::size_t index{}, offset{};
