@@ -17,6 +17,18 @@
 
 namespace metastr {
 
+namespace details {
+
+constexpr void assert_false(bool boolean) noexcept {
+#ifndef NDEBUG
+    if (boolean) [[unlikely]] {
+        ::fatal_error::terminate();
+    }
+#endif  // NDEBUG
+}
+
+}  // namespace details
+
 // clang-format off
 template<typename Char>
 concept is_char =
@@ -177,22 +189,19 @@ struct metastr {
 namespace details::transcoding {
 
 template<details::transcoding::is_utf32 Char, ::std::size_t N, details::transcoding::is_utf8 u8_type>
-constexpr auto utf32to8(metastr<Char, N> const& u32str) noexcept {
+[[nodiscard]] constexpr auto utf32to8(metastr<Char, N> const& u32str) noexcept {
     constexpr u8_type tmp_[N * 4 - 3]{};
     metastr res{tmp_};
 
     auto index = ::std::size_t{};
     for (auto u32chr : u32str.str) {
-#ifndef NDEBUG
         // clang-format off
-        if (u32chr > details::transcoding::CODE_POINT_MAX
+        assert_false(
+            u32chr > details::transcoding::CODE_POINT_MAX
             || u32chr >= details::transcoding::LEAD_SURROGATE_MIN
-            && u32chr <= details::transcoding::TRAIL_SURROGATE_MAX) [[unlikely]]
-        {
-            fatal_error::terminate();
-        }
+            && u32chr <= details::transcoding::TRAIL_SURROGATE_MAX
+        );
         // clang-format on
-#endif  // NDEBUG
 
         if (u32chr < 0x80) {
             res.str[index++] = static_cast<u8_type>(u32chr);
@@ -215,7 +224,7 @@ constexpr auto utf32to8(metastr<Char, N> const& u32str) noexcept {
 }
 
 template<details::transcoding::is_utf16 Char, ::std::size_t N, details::transcoding::is_utf8 u8_type>
-constexpr auto utf16to8(metastr<Char, N> const& u16str) noexcept {
+[[nodiscard]] constexpr auto utf16to8(metastr<Char, N> const& u16str) noexcept {
     constexpr u8_type tmp_[4 * N - 3]{};
     metastr res{tmp_};
 
@@ -223,29 +232,19 @@ constexpr auto utf16to8(metastr<Char, N> const& u16str) noexcept {
     for (::std::size_t i{}; i < N;) {
         auto u32chr = static_cast<char32_t>(u16str.str[i++] & 0xffff);
         // clang-format off
-#ifndef NDEBUG
-        if (u32chr >= details::transcoding::TRAIL_SURROGATE_MIN
-            && u32chr <= details::transcoding::TRAIL_SURROGATE_MAX) [[unlikely]]
-        {
-            fatal_error::terminate();
-        }
-#endif  // NDEBUG
+        assert_false(
+            u32chr >= details::transcoding::TRAIL_SURROGATE_MIN
+            && u32chr <= details::transcoding::TRAIL_SURROGATE_MAX
+        );
         if (u32chr >= details::transcoding::LEAD_SURROGATE_MIN
             && u32chr <= details::transcoding::LEAD_SURROGATE_MAX)
         {
-#ifndef NDEBUG
-            if (i >= N) [[unlikely]] {
-                fatal_error::terminate();
-            }
-#endif  // NDEBUG
+            assert_false(i >= N);
             auto const trail_surrogate = static_cast<char32_t>(u16str.str[i++] & 0xffff);
-#ifndef NDEBUG
-            if (trail_surrogate < details::transcoding::TRAIL_SURROGATE_MIN
-                || trail_surrogate > details::transcoding::TRAIL_SURROGATE_MAX) [[unlikely]]
-            {
-                fatal_error::terminate();
-            }
-#endif  // NDEBUG
+            assert_false(
+                trail_surrogate < details::transcoding::TRAIL_SURROGATE_MIN
+                || trail_surrogate > details::transcoding::TRAIL_SURROGATE_MAX
+            );
             u32chr = (u32chr << 10) + trail_surrogate + details::transcoding::SURROGATE_OFFSET;
         }
         // clang-format on
@@ -266,6 +265,7 @@ constexpr auto utf16to8(metastr<Char, N> const& u16str) noexcept {
             res.str[index++] = static_cast<u8_type>((u32chr & 0x3f) | 0x80);
         }
     }
+
     return res;
 }
 
@@ -284,7 +284,7 @@ constexpr auto utf16to8(metastr<Char, N> const& u16str) noexcept {
  * compiler has some checks that can avoid some mistakes like this)
  */
 template<is_char Char_r, is_char Char, ::std::size_t N>
-constexpr auto code_cvt(metastr<Char, N> const& str) noexcept {
+[[nodiscard]] constexpr auto code_cvt(metastr<Char, N> const& str) noexcept {
     // clang-format off
     if constexpr (
         details::transcoding::is_utf8<Char> && details::transcoding::is_utf8<Char_r>
