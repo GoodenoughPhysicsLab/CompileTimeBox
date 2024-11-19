@@ -18,18 +18,6 @@
 
 namespace metastr {
 
-namespace details {
-
-constexpr void assert_false(bool boolean) noexcept {
-#ifndef NDEBUG
-    if (boolean) [[unlikely]] {
-        ::fatal_error::terminate();
-    }
-#endif  // NDEBUG
-}
-
-}  // namespace details
-
 // clang-format off
 template<typename Char>
 concept is_char =
@@ -219,10 +207,10 @@ template<details::transcoding::is_utf32 Char, ::std::size_t N, details::transcod
     auto index = ::std::size_t{};
     for (auto u32chr : u32str.str) {
         // clang-format off
-        assert_false(
-            u32chr > details::transcoding::CODE_POINT_MAX
-            || u32chr >= details::transcoding::LEAD_SURROGATE_MIN
-            && u32chr <= details::transcoding::TRAIL_SURROGATE_MAX
+        assert(
+            u32chr <= details::transcoding::CODE_POINT_MAX
+            && (u32chr < details::transcoding::LEAD_SURROGATE_MIN
+            || u32chr > details::transcoding::TRAIL_SURROGATE_MAX)
         );
         // clang-format on
 
@@ -255,18 +243,18 @@ template<details::transcoding::is_utf16 Char, ::std::size_t N, details::transcod
     for (::std::size_t i{}; i < N;) {
         auto u32chr = static_cast<char32_t>(u16str.str[i++] & 0xffff);
         // clang-format off
-        assert_false(
-            u32chr >= details::transcoding::TRAIL_SURROGATE_MIN
-            && u32chr <= details::transcoding::TRAIL_SURROGATE_MAX
+        assert(
+            u32chr < details::transcoding::TRAIL_SURROGATE_MIN
+            || u32chr > details::transcoding::TRAIL_SURROGATE_MAX
         );
         if (u32chr >= details::transcoding::LEAD_SURROGATE_MIN
             && u32chr <= details::transcoding::LEAD_SURROGATE_MAX)
         {
-            assert_false(i >= N);
+            assert(i < N);
             auto const trail_surrogate = static_cast<char32_t>(u16str.str[i++] & 0xffff);
-            assert_false(
-                trail_surrogate < details::transcoding::TRAIL_SURROGATE_MIN
-                || trail_surrogate > details::transcoding::TRAIL_SURROGATE_MAX
+            assert(
+                trail_surrogate >= details::transcoding::TRAIL_SURROGATE_MIN
+                && trail_surrogate <= details::transcoding::TRAIL_SURROGATE_MAX
             );
             u32chr = (u32chr << 10) + trail_surrogate + details::transcoding::SURROGATE_OFFSET;
         }
