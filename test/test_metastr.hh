@@ -57,6 +57,7 @@ consteval void test_concat() noexcept {
     static_assert(metastr::concat(str1, "def") == metastr::metastr{"abcdef"});
     static_assert(metastr::concat("abc", str2) == metastr::metastr{"abcdef"});
     static_assert(metastr::concat(str1, str2) == metastr::metastr{"abcdef"});
+    static_assert(metastr::concat(str1, str2) != metastr::metastr{"abcdeg"});
     static_assert(
         metastr::concat(u8"abc", u8"def", u8"2333", u8"滑稽")
         == metastr::metastr{u8"abcdef2333滑稽"}
@@ -95,7 +96,7 @@ inline void test_reduce_trailing_zero() noexcept {
     constexpr auto _2 = metastr::reduce_trailing_zero<char8_t, 6, _1>();
     constexpr auto _3 = metastr::metastr{u8"abc"};
     static_assert(_2.len == 4);
-    static_assert(::std::equal(_2.str, _2.str + _2.len - 1, _3.str));
+    static_assert(::std::equal(_2.str, _2.str + _2.len, _3.str));
 }
 
 template<metastr::metastr Str>

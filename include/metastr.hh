@@ -112,7 +112,8 @@ struct metastr {
     /* Same behavior as ::std::string::substr
      */
     template<::std::size_t pos, ::std::size_t N_r = N - pos - 1>
-    [[nodiscard]] constexpr auto substr() const noexcept {
+    [[nodiscard]]
+    constexpr auto substr() const noexcept {
         static_assert(pos < N, "metastr::OutOfRangeError: pos out of range");
 
         constexpr auto n = ::std::min(N_r, N - pos - 1);
@@ -121,12 +122,14 @@ struct metastr {
         return metastr<Char, n + 1>{tmp_};
     }
 
-    [[nodiscard]] constexpr auto pop_back() const noexcept {
+    [[nodiscard]]
+    constexpr auto pop_back() const noexcept {
         static_assert(N > 1, "Empty string can't be poped back");
         return this->substr<0, N - 2>();
     }
 
     template<is_char Char_r, ::std::size_t N_r>
+    [[nodiscard]]
     constexpr bool operator==(Char_r const (&other)[N_r]) const noexcept {
         if constexpr (N <= N_r) {
             if (!::std::equal(this->str, this->str + N - 1, other)) {
@@ -152,12 +155,14 @@ struct metastr {
     }
 
     template<is_char Char_r, ::std::size_t N_r>
+    [[nodiscard]]
     constexpr bool operator==(metastr<Char_r, N_r> const& other) const noexcept {
         return *this == other.str;
     }
 
 #ifndef METASTR_N_STL_SUPPORT
     template<is_char Char_r>
+    [[nodiscard]]
     constexpr bool operator==(::std::basic_string_view<Char_r> const& other) const noexcept {
         if (N < other.size()) {
             if (!::std::equal(this->str, this->str + N - 1, other.begin())) {
@@ -183,14 +188,17 @@ struct metastr {
     }
 
     template<is_char Char_r>
+    [[nodiscard]]
     constexpr bool operator==(::std::basic_string<Char_r> const other) const noexcept {
         return *this == ::std::basic_string_view<Char_r>{other};
     }
 
+    [[nodiscard]]
     constexpr operator ::std::basic_string<Char>() const noexcept {
         return ::std::basic_string<Char>{str, N - 1};
     }
 
+    [[nodiscard]]
     constexpr operator ::std::basic_string_view<Char>() const noexcept {
         return ::std::basic_string_view<Char>{str, N - 1};
     }
@@ -200,7 +208,8 @@ struct metastr {
 namespace details::transcoding {
 
 template<details::transcoding::is_utf32 Char, ::std::size_t N, details::transcoding::is_utf8 u8_type>
-[[nodiscard]] constexpr auto utf32to8(metastr<Char, N> const& u32str) noexcept {
+[[nodiscard]]
+constexpr auto utf32to8(metastr<Char, N> const& u32str) noexcept {
     constexpr u8_type tmp_[N * 4 - 3]{};
     metastr res{tmp_};
 
@@ -235,7 +244,8 @@ template<details::transcoding::is_utf32 Char, ::std::size_t N, details::transcod
 }
 
 template<details::transcoding::is_utf16 Char, ::std::size_t N, details::transcoding::is_utf8 u8_type>
-[[nodiscard]] constexpr auto utf16to8(metastr<Char, N> const& u16str) noexcept {
+[[nodiscard]]
+constexpr auto utf16to8(metastr<Char, N> const& u16str) noexcept {
     constexpr u8_type tmp_[4 * N - 3]{};
     metastr res{tmp_};
 
@@ -295,7 +305,8 @@ template<details::transcoding::is_utf16 Char, ::std::size_t N, details::transcod
  * compiler has some checks that can avoid some mistakes like this)
  */
 template<is_char Char_r, is_char Char, ::std::size_t N>
-[[nodiscard]] constexpr auto code_cvt(metastr<Char, N> const& str) noexcept {
+[[nodiscard]]
+constexpr auto code_cvt(metastr<Char, N> const& str) noexcept {
     // clang-format off
     if constexpr (
         details::transcoding::is_utf8<Char> && details::transcoding::is_utf8<Char_r>
@@ -342,6 +353,7 @@ template<typename T>
 concept can_concat = is_metastr<T> || is_c_str<T>;
 
 template<can_concat T>
+[[nodiscard]]
 constexpr auto concat_helper(T const& str) noexcept {
     if constexpr (is_metastr<T>) {
         return str;
@@ -360,24 +372,26 @@ constexpr auto concat_helper(T const& str) noexcept {
 }  // namespace details
 
 template<details::can_concat... T>
-[[nodiscard]] constexpr auto concat(T const&... strs) noexcept {
+[[nodiscard]]
+constexpr auto concat(T const&... strs) noexcept {
     return concat(details::concat_helper(strs)...);
 }
 
 template<is_metastr Str1, is_metastr... Strs>
     requires (::std::is_same_v<typename Str1::char_type, typename Strs::char_type> && ...)
-[[nodiscard]] constexpr auto concat(Str1 const& str1, Strs const&... strs) noexcept {
-    constexpr typename Str1::char_type tmp_[Str1::len + (Strs::len + ...) - sizeof...(Strs)]{};
-    auto res = metastr{tmp_};
+[[nodiscard]]
+constexpr auto concat(Str1 const& str1, Strs const&... strs) noexcept {
+    typename Str1::char_type tmp_[Str1::len + (Strs::len + ...) - sizeof...(Strs)]{};
     constexpr decltype(Str1::len) lens[]{Str1::len - 1, (Strs::len - 1)...};
     ::std::size_t index{}, offset{};
-    ::std::copy(str1.str, str1.str + Str1::len - 1, res.str);
-    (::std::copy(strs.str, strs.str + Strs::len - 1, (offset += lens[index++], res.str + offset)), ...);
-    return res;
+    ::std::copy(str1.str, str1.str + Str1::len - 1, tmp_);
+    (::std::copy(strs.str, strs.str + Strs::len - 1, (offset += lens[index++], tmp_ + offset)), ...);
+    return metastr{tmp_};
 }
 
 template<is_char Char, ::std::size_t N, metastr<Char, N> str>
-[[nodiscard]] constexpr auto reduce_trailing_zero() noexcept {
+[[nodiscard]]
+constexpr auto reduce_trailing_zero() noexcept {
     if constexpr (N == 1 || str.str[N - 2] != 0 && str.str[N - 1] == 0) {
         return str;
     } else {
