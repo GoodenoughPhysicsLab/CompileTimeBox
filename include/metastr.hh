@@ -5,6 +5,7 @@
 #endif
 
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <type_traits>
 
@@ -112,13 +113,35 @@ struct metastr {
     constexpr metastr() noexcept = delete;
 
     constexpr metastr(Char const (&arr)[N]) noexcept {
+        assert(arr[N - 1] == 0);  // must end with '\0'
         ::std::copy(arr, arr + N - 1, str);
+    }
+
+    constexpr metastr(metastr<Char, N> const& other) noexcept {
+        ::std::copy(other.str, other.str + N - 1, this->str);
+    }
+
+    /* Same behavior as ::std::string::substr
+     */
+    template<::std::size_t pos, ::std::size_t N_r = N - pos - 1>
+    [[nodiscard]] constexpr auto substr() const noexcept {
+        static_assert(pos < N, "metastr::OutOfRangeError: pos out of range");
+
+        constexpr auto n = ::std::min(N_r, N - pos - 1);
+        Char tmp_[n + 1]{};
+        ::std::copy(this->str + pos, this->str + pos + n, tmp_);
+        return metastr<Char, n + 1>{tmp_};
+    }
+
+    [[nodiscard]] constexpr auto pop_back() const noexcept {
+        static_assert(N > 1, "Empty string can't be poped back");
+        return this->substr<0, N - 2>();
     }
 
     template<is_char Char_r, ::std::size_t N_r>
     constexpr bool operator==(Char_r const (&other)[N_r]) const noexcept {
         if constexpr (N <= N_r) {
-            if (!::std::equal(this->str, this->str + N - 2, other)) {
+            if (!::std::equal(this->str, this->str + N - 1, other)) {
                 return false;
             }
             for (::std::size_t i{N - 1}; i < N_r; ++i) {
@@ -128,7 +151,7 @@ struct metastr {
             }
             return true;
         } else {
-            if (!::std::equal(other, other + N_r - 2, this->str)) {
+            if (!::std::equal(other, other + N_r - 1, this->str)) {
                 return false;
             }
             for (::std::size_t i{N_r - 1}; i < N; ++i) {
@@ -148,8 +171,8 @@ struct metastr {
 #ifndef METASTR_N_STL_SUPPORT
     template<is_char Char_r>
     constexpr bool operator==(::std::basic_string_view<Char_r> const& other) const noexcept {
-        if (N <= other.size()) {
-            if (!::std::equal(this->str, this->str + N - 2, other.begin())) {
+        if (N < other.size()) {
+            if (!::std::equal(this->str, this->str + N - 1, other.begin())) {
                 return false;
             }
             for (::std::size_t i{N - 1}; i < other.size(); ++i) {
@@ -159,7 +182,7 @@ struct metastr {
             }
             return true;
         } else {
-            if (!::std::equal(other.begin(), other.end() - 1, this->str)) {
+            if (!::std::equal(other.begin(), other.end(), this->str)) {
                 return false;
             }
             for (::std::size_t i{other.size()}; i < N; ++i) {
@@ -363,6 +386,15 @@ template<is_metastr Str1, is_metastr... Strs>
     ::std::copy(str1.str, str1.str + Str1::len - 1, res.str);
     (::std::copy(strs.str, strs.str + Strs::len - 1, (offset += lens[index++], res.str + offset)), ...);
     return res;
+}
+
+template<is_char Char, ::std::size_t N, metastr<Char, N> str>
+[[nodiscard]] constexpr auto reduce_trailing_zero() noexcept {
+    if constexpr (N == 1 || str.str[N - 2] != 0 && str.str[N - 1] == 0) {
+        return str;
+    } else {
+        return reduce_trailing_zero<Char, N - 1, str.pop_back()>();
+    }
 }
 
 }  // namespace metastr
