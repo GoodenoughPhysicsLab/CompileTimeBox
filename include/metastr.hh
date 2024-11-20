@@ -2,7 +2,7 @@
 
 #if !__cpp_concepts >= 201907L
     #error "This library requires C++20"
-#endif
+#endif  // !__cpp_concepts >= 201907L
 
 #include <algorithm>
 #include <cassert>
@@ -14,7 +14,7 @@
 #ifndef METASTR_N_STL_SUPPORT
     #include <string>
     #include <string_view>
-#endif
+#endif  // !defined(METASTR_N_STL_SUPPORT)
 
 namespace metastr {
 
@@ -25,7 +25,7 @@ concept is_char =
     || std::is_same_v<::std::remove_cv_t<Char>, wchar_t>
 #if __cpp_char8_t >= 201811L
     || ::std::is_same_v<::std::remove_cv_t<Char>, char8_t>
-#endif
+#endif  // __cpp_char8_t >= 201811L
     || std::is_same_v<::std::remove_cv_t<Char>, char16_t>
     || std::is_same_v<::std::remove_cv_t<Char>, char32_t>;
 // clang-format on
@@ -53,7 +53,7 @@ template<typename Char>
 concept is_utf8 =
 #if __cpp_char8_t >= 201811L
     ::std::is_same_v<::std::remove_cv_t<Char>, char8_t> ||  // unprintable utf-8 type
-#endif
+#endif  // __cpp_char8_t >= 201811L
     ::std::is_same_v<::std::remove_cv_t<Char>, char>;  // printable utf-8 type
 
 /* Assume encoding of char16_t and
@@ -65,7 +65,7 @@ template<typename Char>
 concept is_utf16 =
 #ifdef _WIN32
     ::std::is_same_v<::std::remove_cv_t<Char>, wchar_t> ||
-#endif
+#endif  // defined(_WIN32)
     ::std::is_same_v<::std::remove_cv_t<Char>, char16_t>;
 
 /* Assume encoding of char32_t and
@@ -77,7 +77,7 @@ template<typename Char>
 concept is_utf32 =
 #ifndef _WIN32
     ::std::is_same_v<::std::remove_cv_t<Char>, wchar_t> ||
-#endif
+#endif  // !defined(_WIN32)
     ::std::is_same_v<::std::remove_cv_t<Char>, char32_t>;
 
 }  // namespace details::transcoding
@@ -94,14 +94,14 @@ concept is_utf32 =
  */
 template<is_char Char, ::std::size_t N>
 struct metastr {
-    using char_type = Char;
+    using value_type = Char;
     static constexpr auto len{N};
     Char str[N]{};
 
     constexpr metastr() noexcept = delete;
 
     constexpr metastr(Char const (&arr)[N]) noexcept {
-        assert(arr[N - 1] == 0);  // must end with '\0'
+        assert(arr[N - 1] == 0);  // must ends with '\0'
         ::std::copy(arr, arr + N - 1, str);
     }
 
@@ -125,7 +125,12 @@ struct metastr {
     [[nodiscard]]
     constexpr auto pop_back() const noexcept {
         static_assert(N > 1, "Empty string can't be poped back");
-        return this->substr<0, N - 2>();
+        return this->substr<0, metastr::size() - 1>();
+    }
+
+    [[nodiscard]]
+    static constexpr ::std::size_t size() noexcept {
+        return N - 1;
     }
 
     template<is_char Char_r, ::std::size_t N_r>
@@ -202,7 +207,7 @@ struct metastr {
     constexpr operator ::std::basic_string_view<Char>() const noexcept {
         return ::std::basic_string_view<Char>{str, N - 1};
     }
-#endif
+#endif  // !defined(METASTR_N_STL_SUPPORT)
 };
 
 namespace details::transcoding {
@@ -363,9 +368,9 @@ constexpr auto concat_helper(T const& str) noexcept {
         // InternalError: please bug-report
 #ifndef NDEBUG
         fatal_error::terminate();
-#else
+#else  // ^^^ defined(NDEBUG) / vvv !defined(NDEBUG)
         fatal_error::unreachable();
-#endif
+#endif  // !defined(NDEBUG)
     }
 }
 
@@ -378,10 +383,10 @@ constexpr auto concat(T const&... strs) noexcept {
 }
 
 template<is_metastr Str1, is_metastr... Strs>
-    requires (::std::is_same_v<typename Str1::char_type, typename Strs::char_type> && ...)
+    requires (::std::is_same_v<typename Str1::value_type, typename Strs::value_type> && ...)
 [[nodiscard]]
 constexpr auto concat(Str1 const& str1, Strs const&... strs) noexcept {
-    typename Str1::char_type tmp_[Str1::len + (Strs::len + ...) - sizeof...(Strs)]{};
+    typename Str1::value_type tmp_[Str1::len + (Strs::len + ...) - sizeof...(Strs)]{};
     constexpr decltype(Str1::len) lens[]{Str1::len - 1, (Strs::len - 1)...};
     ::std::size_t index{}, offset{};
     ::std::copy(str1.str, str1.str + Str1::len - 1, tmp_);
@@ -389,13 +394,47 @@ constexpr auto concat(Str1 const& str1, Strs const&... strs) noexcept {
     return metastr{tmp_};
 }
 
-template<is_char Char, ::std::size_t N, metastr<Char, N> str>
+#ifndef METASTR_N_STL_SUPPORT
+
+namespace details {
+
+template<is_char Char, ::std::size_t N>
+[[nodiscard]]
+constexpr auto c_str2string(Char const (&str)[N]) noexcept {
+    return ::std::basic_string<::std::remove_cv_t<Char>>{str};
+}
+
+template<typename T>
+[[nodiscard]]
+constexpr auto concat_helper2(T const& str) noexcept {
+    if constexpr (is_c_str<T>) {
+        return c_str2string(str);
+    } else {
+        return static_cast<::std::basic_string<::std::remove_cvref_t<typename T::value_type>>>(str);
+    }
+}
+
+}  // namespace details
+
+template<typename... Strs>
+    requires (
+        (!details::can_concat<Strs> || ...)
+        && ((details::is_c_str<Strs> || requires{typename Strs::value_type;}) && ...)
+    )
+[[nodiscard]]
+constexpr auto concat(Strs const&... strs) noexcept {
+    return (details::concat_helper2(strs) + ...);
+}
+
+#endif  // !defined(METASTR_N_STL_SUPPORT)
+
+template<metastr str>
 [[nodiscard]]
 constexpr auto reduce_trailing_zero() noexcept {
-    if constexpr (N == 1 || str.str[N - 2] != 0 && str.str[N - 1] == 0) {
+    if constexpr (str.len == 1 || str.str[str.len - 2] != 0 && str.str[str.len - 1] == 0) {
         return str;
     } else {
-        return reduce_trailing_zero<Char, N - 1, str.pop_back()>();
+        return reduce_trailing_zero<str.pop_back()>();
     }
 }
 

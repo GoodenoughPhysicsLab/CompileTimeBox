@@ -15,9 +15,12 @@ IndentAccessModifiers: false
 AccessModifierOffset: -4
 
 AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: None
+AlignConsecutiveDeclarations: false
 AlignEscapedNewlines: DontAlign
 AlignConsecutiveMacros: false
+
+AlignTrailingComments:
+  Kind: Never
 
 UseTab: Never
 SeparateDefinitionBlocks: Always
