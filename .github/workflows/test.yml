@@ -16,7 +16,7 @@ jobs:
     - name: Build tests
       run: |
         cmake -S test -B build -Wno-dev
-        cmake --build build
+        cmake --build build --config Debug
 
     - name: Run tests
       run: |

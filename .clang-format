@@ -13,6 +13,7 @@ BinPackParameters: true
 BinPackArguments: true
 IndentAccessModifiers: false
 AccessModifierOffset: -4
+AllowShortCompoundRequirementOnASingleLine: true
 
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false

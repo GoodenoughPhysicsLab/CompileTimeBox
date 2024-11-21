@@ -4,7 +4,7 @@
     #include <cstdlib>
 #endif
 
-namespace fatal_error {
+namespace ctb::shutdown {
 
 #if __has_cpp_attribute(__gnu__::__always_inline__)
 [[__gnu__::__always_inline__]]
@@ -41,4 +41,4 @@ inline void unreachable() noexcept {
 #endif
 }
 
-}  // namespace fatal_error
+}  // namespace ctb::shutdown

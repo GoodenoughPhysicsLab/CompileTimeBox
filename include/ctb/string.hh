@@ -9,14 +9,14 @@
 #include <cstddef>
 #include <type_traits>
 
-#include "fatal_error.hh"
+#include "shutdown.hh"
 
-#ifndef METASTR_N_STL_SUPPORT
+#ifndef CTB_N_STL_SUPPORT
     #include <string>
     #include <string_view>
-#endif  // !defined(METASTR_N_STL_SUPPORT)
+#endif  // !defined(CTB_N_STL_SUPPORT)
 
-namespace metastr {
+namespace ctb::string {
 
 // clang-format off
 template<typename Char>
@@ -82,30 +82,30 @@ concept is_utf32 =
 
 }  // namespace details::transcoding
 
-/* class metastr
+/* class string
  *
  * A string literal that can be used in template.
  *
  * This class just for compile-time using, and to support it, functions/methods in
- * namespace metastr usually return a new object of class metastr.
+ * namespace string usually return a new object of class string.
  *
- * if you have another runtime requirement, please convert metastr to
+ * if you have another runtime requirement, please convert string to
  * std::string or std::string_view.
  */
 template<is_char Char, ::std::size_t N>
-struct metastr {
+struct string {
     using value_type = Char;
     static constexpr auto len{N};
     Char str[N]{};
 
-    constexpr metastr() noexcept = delete;
+    constexpr string() noexcept = delete;
 
-    constexpr metastr(Char const (&arr)[N]) noexcept {
+    constexpr string(Char const (&arr)[N]) noexcept {
         assert(arr[N - 1] == 0);  // must ends with '\0'
         ::std::copy(arr, arr + N - 1, str);
     }
 
-    constexpr metastr(metastr<Char, N> const& other) noexcept {
+    constexpr string(string<Char, N> const& other) noexcept {
         ::std::copy(other.str, other.str + N - 1, this->str);
     }
 
@@ -114,18 +114,18 @@ struct metastr {
     template<::std::size_t pos, ::std::size_t N_r = N - pos - 1>
     [[nodiscard]]
     constexpr auto substr() const noexcept {
-        static_assert(pos < N, "metastr::OutOfRangeError: pos out of range");
+        static_assert(pos < N, "ctb::string::OutOfRangeError: pos out of range");
 
         constexpr auto n = ::std::min(N_r, N - pos - 1);
         Char tmp_[n + 1]{};
         ::std::copy(this->str + pos, this->str + pos + n, tmp_);
-        return metastr<Char, n + 1>{tmp_};
+        return string<Char, n + 1>{tmp_};
     }
 
     [[nodiscard]]
     constexpr auto pop_back() const noexcept {
         static_assert(N > 1, "Empty string can't be poped back");
-        return this->substr<0, metastr::size() - 1>();
+        return this->substr<0, string::size() - 1>();
     }
 
     [[nodiscard]]
@@ -161,11 +161,11 @@ struct metastr {
 
     template<is_char Char_r, ::std::size_t N_r>
     [[nodiscard]]
-    constexpr bool operator==(metastr<Char_r, N_r> const& other) const noexcept {
+    constexpr bool operator==(string<Char_r, N_r> const& other) const noexcept {
         return *this == other.str;
     }
 
-#ifndef METASTR_N_STL_SUPPORT
+#ifndef CTB_N_STL_SUPPORT
     template<is_char Char_r>
     [[nodiscard]]
     constexpr bool operator==(::std::basic_string_view<Char_r> const& other) const noexcept {
@@ -207,16 +207,16 @@ struct metastr {
     constexpr operator ::std::basic_string_view<Char>() const noexcept {
         return ::std::basic_string_view<Char>{str, N - 1};
     }
-#endif  // !defined(METASTR_N_STL_SUPPORT)
+#endif  // !defined(CTB_N_STL_SUPPORT)
 };
 
 namespace details::transcoding {
 
 template<details::transcoding::is_utf32 Char, ::std::size_t N, details::transcoding::is_utf8 u8_type>
 [[nodiscard]]
-constexpr auto utf32to8(metastr<Char, N> const& u32str) noexcept {
+constexpr auto utf32to8(string<Char, N> const& u32str) noexcept {
     constexpr u8_type tmp_[N * 4 - 3]{};
-    metastr res{tmp_};
+    string res{tmp_};
 
     auto index = ::std::size_t{};
     for (auto u32chr : u32str.str) {
@@ -250,9 +250,9 @@ constexpr auto utf32to8(metastr<Char, N> const& u32str) noexcept {
 
 template<details::transcoding::is_utf16 Char, ::std::size_t N, details::transcoding::is_utf8 u8_type>
 [[nodiscard]]
-constexpr auto utf16to8(metastr<Char, N> const& u16str) noexcept {
+constexpr auto utf16to8(string<Char, N> const& u16str) noexcept {
     constexpr u8_type tmp_[4 * N - 3]{};
-    metastr res{tmp_};
+    string res{tmp_};
 
     auto index = ::std::size_t{};
     for (::std::size_t i{}; i < N;) {
@@ -297,7 +297,7 @@ constexpr auto utf16to8(metastr<Char, N> const& u16str) noexcept {
 
 }  // namespace details::transcoding
 
-/* Convert a metastr to another encoding.
+/* Convert a string to another encoding.
  * Assume char, char8_t -> utf-8
  *        char16_t, wchar_t(Windows) -> utf-16
  *        char32_t, wchar_t(not Windows) -> utf-32
@@ -311,7 +311,7 @@ constexpr auto utf16to8(metastr<Char, N> const& u16str) noexcept {
  */
 template<is_char Char_r, is_char Char, ::std::size_t N>
 [[nodiscard]]
-constexpr auto code_cvt(metastr<Char, N> const& str) noexcept {
+constexpr auto code_cvt(string<Char, N> const& str) noexcept {
     // clang-format off
     if constexpr (
         details::transcoding::is_utf8<Char> && details::transcoding::is_utf8<Char_r>
@@ -320,7 +320,7 @@ constexpr auto code_cvt(metastr<Char, N> const& str) noexcept {
     ) {
         Char_r tmp_[N]{};
         ::std::copy(str.str, str.str + N - 1, tmp_);
-        return metastr{tmp_};
+        return string{tmp_};
     }
     // clang-format on
     else if constexpr (details::transcoding::is_utf32<Char> && details::transcoding::is_utf8<Char_r>) {
@@ -333,15 +333,15 @@ constexpr auto code_cvt(metastr<Char, N> const& str) noexcept {
 namespace details {
 
 template<typename>
-constexpr bool is_metastr_ = false;
+constexpr bool is_ctb_string_ = false;
 
 template<is_char Char, ::std::size_t N>
-constexpr bool is_metastr_<metastr<Char, N>> = true;
+constexpr bool is_ctb_string_<string<Char, N>> = true;
 
 }  // namespace details
 
 template<typename T>
-concept is_metastr = details::is_metastr_<::std::remove_cvref_t<T>>;
+concept is_ctb_string = details::is_ctb_string_<::std::remove_cvref_t<T>>;
 
 namespace details {
 
@@ -355,19 +355,19 @@ template<typename T>
 concept is_c_str = is_c_str_<::std::remove_cvref_t<T>>;
 
 template<typename T>
-concept can_concat = is_metastr<T> || is_c_str<T>;
+concept can_concat = is_ctb_string<T> || is_c_str<T>;
 
 template<can_concat T>
 [[nodiscard]]
 constexpr auto concat_helper(T const& str) noexcept {
-    if constexpr (is_metastr<T>) {
+    if constexpr (is_ctb_string<T>) {
         return str;
     } else if constexpr (is_c_str<T>) {
-        return metastr{str};
+        return string{str};
     } else {
         // InternalError: please bug-report
 #ifndef NDEBUG
-        fatal_error::terminate();
+        shutdown::terminate();
 #else  // ^^^ defined(NDEBUG) / vvv !defined(NDEBUG)
         fatal_error::unreachable();
 #endif  // !defined(NDEBUG)
@@ -382,7 +382,7 @@ constexpr auto concat(T const&... strs) noexcept {
     return concat(details::concat_helper(strs)...);
 }
 
-template<is_metastr Str1, is_metastr... Strs>
+template<is_ctb_string Str1, is_ctb_string... Strs>
     requires (::std::is_same_v<typename Str1::value_type, typename Strs::value_type> && ...)
 [[nodiscard]]
 constexpr auto concat(Str1 const& str1, Strs const&... strs) noexcept {
@@ -391,10 +391,10 @@ constexpr auto concat(Str1 const& str1, Strs const&... strs) noexcept {
     ::std::size_t index{}, offset{};
     ::std::copy(str1.str, str1.str + Str1::len - 1, tmp_);
     (::std::copy(strs.str, strs.str + Strs::len - 1, (offset += lens[index++], tmp_ + offset)), ...);
-    return metastr{tmp_};
+    return string{tmp_};
 }
 
-#ifndef METASTR_N_STL_SUPPORT
+#ifndef CTB_N_STL_SUPPORT
 
 namespace details {
 
@@ -417,18 +417,16 @@ constexpr auto concat_helper2(T const& str) noexcept {
 }  // namespace details
 
 template<typename... Strs>
-    requires (
-        (!details::can_concat<Strs> || ...)
-        && ((details::is_c_str<Strs> || requires{typename Strs::value_type;}) && ...)
-    )
+    requires ((!details::can_concat<Strs> || ...) &&
+              ((details::is_c_str<Strs> || requires { typename Strs::value_type; }) && ...))
 [[nodiscard]]
 constexpr auto concat(Strs const&... strs) noexcept {
     return (details::concat_helper2(strs) + ...);
 }
 
-#endif  // !defined(METASTR_N_STL_SUPPORT)
+#endif  // !defined(CTB_N_STL_SUPPORT)
 
-template<metastr str>
+template<string str>
 [[nodiscard]]
 constexpr auto reduce_trailing_zero() noexcept {
     if constexpr (str.len == 1 || str.str[str.len - 2] != 0 && str.str[str.len - 1] == 0) {
@@ -438,4 +436,4 @@ constexpr auto reduce_trailing_zero() noexcept {
     }
 }
 
-}  // namespace metastr
+}  // namespace ctb::string
