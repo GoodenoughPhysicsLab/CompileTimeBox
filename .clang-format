@@ -14,6 +14,8 @@ BinPackArguments: true
 IndentAccessModifiers: false
 AccessModifierOffset: -4
 AllowShortCompoundRequirementOnASingleLine: true
+PackConstructorInitializers: NextLineOnly
+AllowShortBlocksOnASingleLine: true
 
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false

@@ -10,6 +10,7 @@
 #include <type_traits>
 
 #include "shutdown.hh"
+#include "vector.hh"
 
 #ifndef CTB_N_STL_SUPPORT
     #include <string>
@@ -93,21 +94,25 @@ concept is_utf32 =
  * std::string or std::string_view.
  */
 template<is_char Char, ::std::size_t N>
-struct string {
+struct String {
     using value_type = Char;
     static constexpr auto len{N};
-    Char str[N]{};
+    ::ctb::vector::Vector<Char, N> str;
 
-    constexpr string() noexcept = delete;
+    constexpr String() noexcept = delete;
 
-    constexpr string(Char const (&arr)[N]) noexcept {
+    // clang-format off
+    constexpr String(Char const (&arr)[N]) noexcept
+        : str{arr}
+    {
         assert(arr[N - 1] == 0);  // must ends with '\0'
-        ::std::copy(arr, arr + N - 1, str);
     }
 
-    constexpr string(string<Char, N> const& other) noexcept {
-        ::std::copy(other.str, other.str + N - 1, this->str);
-    }
+    constexpr String(String<Char, N> const& other) noexcept
+        : str{other.str}
+    {}
+
+    // clang-format on
 
     /* Same behavior as ::std::string::substr
      */
@@ -118,14 +123,14 @@ struct string {
 
         constexpr auto n = ::std::min(N_r, N - pos - 1);
         Char tmp_[n + 1]{};
-        ::std::copy(this->str + pos, this->str + pos + n, tmp_);
-        return string<Char, n + 1>{tmp_};
+        ::std::copy(this->str.data() + pos, this->str.data() + pos + n, tmp_);
+        return String<Char, n + 1>{tmp_};
     }
 
     [[nodiscard]]
     constexpr auto pop_back() const noexcept {
         static_assert(N > 1, "Empty string can't be poped back");
-        return this->substr<0, string::size() - 1>();
+        return this->substr<0, String::size() - 1>();
     }
 
     [[nodiscard]]
@@ -137,7 +142,7 @@ struct string {
     [[nodiscard]]
     constexpr bool operator==(Char_r const (&other)[N_r]) const noexcept {
         if constexpr (N <= N_r) {
-            if (!::std::equal(this->str, this->str + N - 1, other)) {
+            if (!::std::equal(this->str.data(), this->str.data() + N - 1, other)) {
                 return false;
             }
             for (::std::size_t i{N - 1}; i < N_r; ++i) {
@@ -147,7 +152,7 @@ struct string {
             }
             return true;
         } else {
-            if (!::std::equal(other, other + N_r - 1, this->str)) {
+            if (!::std::equal(other, other + N_r - 1, this->str.data())) {
                 return false;
             }
             for (::std::size_t i{N_r - 1}; i < N; ++i) {
@@ -161,8 +166,8 @@ struct string {
 
     template<is_char Char_r, ::std::size_t N_r>
     [[nodiscard]]
-    constexpr bool operator==(string<Char_r, N_r> const& other) const noexcept {
-        return *this == other.str;
+    constexpr bool operator==(String<Char_r, N_r> const& other) const noexcept {
+        return *this == other.str.data();
     }
 
 #ifndef CTB_N_STL_SUPPORT
@@ -170,7 +175,7 @@ struct string {
     [[nodiscard]]
     constexpr bool operator==(::std::basic_string_view<Char_r> const& other) const noexcept {
         if (N < other.size()) {
-            if (!::std::equal(this->str, this->str + N - 1, other.begin())) {
+            if (!::std::equal(this->str.data(), this->str.data() + N - 1, other.begin())) {
                 return false;
             }
             for (::std::size_t i{N - 1}; i < other.size(); ++i) {
@@ -180,11 +185,11 @@ struct string {
             }
             return true;
         } else {
-            if (!::std::equal(other.begin(), other.end(), this->str)) {
+            if (!::std::equal(other.begin(), other.end(), this->str.data())) {
                 return false;
             }
             for (::std::size_t i{other.size()}; i < N; ++i) {
-                if (this->str[i] != '\0') {
+                if (this->str.data()[i] != '\0') {
                     return false;
                 }
             }
@@ -200,12 +205,12 @@ struct string {
 
     [[nodiscard]]
     constexpr operator ::std::basic_string<Char>() const noexcept {
-        return ::std::basic_string<Char>{str, N - 1};
+        return ::std::basic_string<Char>{str.data(), N - 1};
     }
 
     [[nodiscard]]
     constexpr operator ::std::basic_string_view<Char>() const noexcept {
-        return ::std::basic_string_view<Char>{str, N - 1};
+        return ::std::basic_string_view<Char>{str.data(), N - 1};
     }
 #endif  // !defined(CTB_N_STL_SUPPORT)
 };
@@ -214,12 +219,11 @@ namespace details::transcoding {
 
 template<details::transcoding::is_utf32 Char, ::std::size_t N, details::transcoding::is_utf8 u8_type>
 [[nodiscard]]
-constexpr auto utf32to8(string<Char, N> const& u32str) noexcept {
-    constexpr u8_type tmp_[N * 4 - 3]{};
-    string res{tmp_};
+constexpr auto utf32to8(String<Char, N> const& u32str) noexcept {
+    u8_type tmp_[N * 4 - 3]{};
 
     auto index = ::std::size_t{};
-    for (auto u32chr : u32str.str) {
+    for (auto u32chr : u32str.str.data()) {
         // clang-format off
         assert(
             u32chr <= details::transcoding::CODE_POINT_MAX
@@ -229,30 +233,29 @@ constexpr auto utf32to8(string<Char, N> const& u32str) noexcept {
         // clang-format on
 
         if (u32chr < 0x80) {
-            res.str[index++] = static_cast<u8_type>(u32chr);
+            tmp_[index++] = static_cast<u8_type>(u32chr);
         } else if (u32chr < 0x800) {
-            res.str[index++] = static_cast<u8_type>((u32chr >> 6) | 0xc0);
-            res.str[index++] = static_cast<u8_type>((u32chr & 0x3f) | 0x80);
+            tmp_[index++] = static_cast<u8_type>((u32chr >> 6) | 0xc0);
+            tmp_[index++] = static_cast<u8_type>((u32chr & 0x3f) | 0x80);
         } else if (u32chr < 0x10000) {
-            res.str[index++] = static_cast<u8_type>((u32chr >> 12) | 0xe0);
-            res.str[index++] = static_cast<u8_type>(((u32chr >> 6) & 0x3f) | 0x80);
-            res.str[index++] = static_cast<u8_type>((u32chr & 0x3f) | 0x80);
+            tmp_[index++] = static_cast<u8_type>((u32chr >> 12) | 0xe0);
+            tmp_[index++] = static_cast<u8_type>(((u32chr >> 6) & 0x3f) | 0x80);
+            tmp_[index++] = static_cast<u8_type>((u32chr & 0x3f) | 0x80);
         } else {
-            res.str[index++] = static_cast<u8_type>((u32chr >> 18) | 0xf0);
-            res.str[index++] = static_cast<u8_type>(((u32chr >> 12) & 0x3f) | 0x80);
-            res.str[index++] = static_cast<u8_type>(((u32chr >> 6) & 0x3f));
-            res.str[index++] = static_cast<u8_type>((u32chr & 0x3f) | 0x80);
+            tmp_[index++] = static_cast<u8_type>((u32chr >> 18) | 0xf0);
+            tmp_[index++] = static_cast<u8_type>(((u32chr >> 12) & 0x3f) | 0x80);
+            tmp_[index++] = static_cast<u8_type>(((u32chr >> 6) & 0x3f));
+            tmp_[index++] = static_cast<u8_type>((u32chr & 0x3f) | 0x80);
         }
     }
 
-    return res;
+    return String{tmp_};
 }
 
 template<details::transcoding::is_utf16 Char, ::std::size_t N, details::transcoding::is_utf8 u8_type>
 [[nodiscard]]
-constexpr auto utf16to8(string<Char, N> const& u16str) noexcept {
-    constexpr u8_type tmp_[4 * N - 3]{};
-    string res{tmp_};
+constexpr auto utf16to8(String<Char, N> const& u16str) noexcept {
+    u8_type tmp_[4 * N - 3]{};
 
     auto index = ::std::size_t{};
     for (::std::size_t i{}; i < N;) {
@@ -276,23 +279,23 @@ constexpr auto utf16to8(string<Char, N> const& u16str) noexcept {
         // clang-format on
 
         if (u32chr < 0x80) {
-            res.str[index++] = static_cast<u8_type>(u32chr);
+            tmp_[index++] = static_cast<u8_type>(u32chr);
         } else if (u32chr < 0x800) {
-            res.str[index++] = static_cast<u8_type>((u32chr >> 6) | 0xc0);
-            res.str[index++] = static_cast<u8_type>((u32chr & 0x3f) | 0x80);
+            tmp_[index++] = static_cast<u8_type>((u32chr >> 6) | 0xc0);
+            tmp_[index++] = static_cast<u8_type>((u32chr & 0x3f) | 0x80);
         } else if (u32chr < 0x10000) {
-            res.str[index++] = static_cast<u8_type>((u32chr >> 12) | 0xe0);
-            res.str[index++] = static_cast<u8_type>(((u32chr >> 6) & 0x3f) | 0x80);
-            res.str[index++] = static_cast<u8_type>((u32chr & 0x3f) | 0x80);
+            tmp_[index++] = static_cast<u8_type>((u32chr >> 12) | 0xe0);
+            tmp_[index++] = static_cast<u8_type>(((u32chr >> 6) & 0x3f) | 0x80);
+            tmp_[index++] = static_cast<u8_type>((u32chr & 0x3f) | 0x80);
         } else {
-            res.str[index++] = static_cast<u8_type>((u32chr >> 18) | 0xf0);
-            res.str[index++] = static_cast<u8_type>(((u32chr >> 12) & 0x3f) | 0x80);
-            res.str[index++] = static_cast<u8_type>(((u32chr >> 6) & 0x3f));
-            res.str[index++] = static_cast<u8_type>((u32chr & 0x3f) | 0x80);
+            tmp_[index++] = static_cast<u8_type>((u32chr >> 18) | 0xf0);
+            tmp_[index++] = static_cast<u8_type>(((u32chr >> 12) & 0x3f) | 0x80);
+            tmp_[index++] = static_cast<u8_type>(((u32chr >> 6) & 0x3f));
+            tmp_[index++] = static_cast<u8_type>((u32chr & 0x3f) | 0x80);
         }
     }
 
-    return res;
+    return String{tmp_};
 }
 
 }  // namespace details::transcoding
@@ -311,7 +314,7 @@ constexpr auto utf16to8(string<Char, N> const& u16str) noexcept {
  */
 template<is_char Char_r, is_char Char, ::std::size_t N>
 [[nodiscard]]
-constexpr auto code_cvt(string<Char, N> const& str) noexcept {
+constexpr auto code_cvt(String<Char, N> const& str) noexcept {
     // clang-format off
     if constexpr (
         details::transcoding::is_utf8<Char> && details::transcoding::is_utf8<Char_r>
@@ -319,8 +322,8 @@ constexpr auto code_cvt(string<Char, N> const& str) noexcept {
         || details::transcoding::is_utf32<Char> && details::transcoding::is_utf32<Char_r>
     ) {
         Char_r tmp_[N]{};
-        ::std::copy(str.str, str.str + N - 1, tmp_);
-        return string{tmp_};
+        ::std::copy(str.str.data(), str.str.data() + N - 1, tmp_);
+        return String{tmp_};
     }
     // clang-format on
     else if constexpr (details::transcoding::is_utf32<Char> && details::transcoding::is_utf8<Char_r>) {
@@ -336,7 +339,7 @@ template<typename>
 constexpr bool is_ctb_string_ = false;
 
 template<is_char Char, ::std::size_t N>
-constexpr bool is_ctb_string_<string<Char, N>> = true;
+constexpr bool is_ctb_string_<String<Char, N>> = true;
 
 }  // namespace details
 
@@ -363,7 +366,7 @@ constexpr auto concat_helper(T const& str) noexcept {
     if constexpr (is_ctb_string<T>) {
         return str;
     } else if constexpr (is_c_str<T>) {
-        return string{str};
+        return String{str};
     } else {
         // InternalError: please bug-report
 #ifndef NDEBUG
@@ -389,9 +392,9 @@ constexpr auto concat(Str1 const& str1, Strs const&... strs) noexcept {
     typename Str1::value_type tmp_[Str1::len + (Strs::len + ...) - sizeof...(Strs)]{};
     constexpr decltype(Str1::len) lens[]{Str1::len - 1, (Strs::len - 1)...};
     ::std::size_t index{}, offset{};
-    ::std::copy(str1.str, str1.str + Str1::len - 1, tmp_);
-    (::std::copy(strs.str, strs.str + Strs::len - 1, (offset += lens[index++], tmp_ + offset)), ...);
-    return string{tmp_};
+    ::std::copy(str1.str.data(), str1.str.data() + Str1::len - 1, tmp_);
+    (::std::copy(strs.str.data(), strs.str.data() + Strs::len - 1, (offset += lens[index++], tmp_ + offset)), ...);
+    return String{tmp_};
 }
 
 #ifndef CTB_N_STL_SUPPORT
@@ -426,7 +429,7 @@ constexpr auto concat(Strs const&... strs) noexcept {
 
 #endif  // !defined(CTB_N_STL_SUPPORT)
 
-template<string str>
+template<String str>
 [[nodiscard]]
 constexpr auto reduce_trailing_zero() noexcept {
     if constexpr (str.len == 1 || str.str[str.len - 2] != 0 && str.str[str.len - 1] == 0) {

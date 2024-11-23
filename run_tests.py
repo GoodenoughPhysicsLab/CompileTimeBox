@@ -28,7 +28,7 @@ def test_gcc():
 def test_msvc():
     build_msvc = os.path.join(PROJECT_DIR, "build-msvc")
     os.system(
-        f"cmake -S {os.path.join(PROJECT_DIR, 'test')} -B {build_msvc} -G Ninja "
+        f"cmake -S {os.path.join(PROJECT_DIR, 'test')} -B {build_msvc} -Wno-dev "
         f"> {os.devnull}"
     )
     build_dir(build_msvc)

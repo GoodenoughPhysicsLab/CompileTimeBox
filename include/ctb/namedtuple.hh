@@ -7,26 +7,32 @@
 #include <tuple>
 #include <type_traits>
 
-#include "string.hh"
+#ifndef CTB_N_STL_SUPPORT
+    #define CTB_N_STL_SUPPORT
+    #include "string.hh"
+    #undef CTB_N_STL_SUPPORT
+#else
+    #include "string.hh"
+#endif
 
 namespace ctb::namedtuple::details {
 
-template<string::string First, string::string... Rest>
+template<string::String First, string::String... Rest>
 struct names : names<Rest...> {
-    static constexpr ::std::basic_string_view<typename decltype(First)::value_type> current_val{First.str};
+    static constexpr auto current_val{First};
     using next_name = names<Rest...>;
 };
 
-template<string::string Str>
+template<string::String Str>
 struct names<Str> {
-    static constexpr ::std::basic_string_view<typename decltype(Str)::value_type> current_val{Str.str};
+    static constexpr auto current_val{Str};
     using next_name = void;
 };
 
 template<typename>
 constexpr bool is_names_ = false;
 
-template<string::string... Str>
+template<string::String... Str>
 constexpr bool is_names_<names<Str...>> = true;
 
 template<typename T>
@@ -57,34 +63,34 @@ consteval ::std::size_t get_size() noexcept {
 
 namespace ctb::namedtuple {
 
-template<string::string... Args>
+template<string::String... Args>
 using names = details::names<Args...>;
 
 template<details::is_names Names, typename... Args>
     requires (details::get_size<Names>() == sizeof...(Args))
-struct namedtuple {
+struct NamedTuple {
     using names = Names;
     ::std::tuple<Args...> tuple;
 
-    constexpr namedtuple(Args&&... args) {
+    constexpr NamedTuple(Args&&... args) {
         this->tuple = ::std::make_tuple(::std::forward<Args>(args)...);
     }
 };
 
-template<string::string... Str, typename... Args>
+template<string::String... Str, typename... Args>
     requires (sizeof...(Str) == sizeof...(Args))
 [[nodiscard]]
 constexpr auto make_namedtuple(Args&&... args) noexcept {
-    return namedtuple<names<Str...>, ::std::decay_t<Args>...>{::std::forward<Args>(args)...};
+    return NamedTuple<names<Str...>, ::std::decay_t<Args>...>{::std::forward<Args>(args)...};
 }
 
 /* get namedtuple element by name
  *
  * Usage: get<"name">(nt)
  */
-template<string::string str, ::std::size_t index = 0, details::is_names Names, typename... Args>
+template<string::String str, ::std::size_t index = 0, details::is_names Names, typename... Args>
 [[nodiscard]]
-constexpr auto get(namedtuple<Names, Args...> nt) noexcept {
+constexpr auto get(NamedTuple<Names, Args...> nt) noexcept {
     static_assert(index < details::get_size<Names>(), "index out of range");
     if constexpr (details::get_name<index, Names>() == str) {
         return ::std::get<index>(nt.tuple);
@@ -99,7 +105,7 @@ constexpr auto get(namedtuple<Names, Args...> nt) noexcept {
  */
 template<::std::size_t N, details::is_names Names, typename... Args>
 [[nodiscard]]
-constexpr auto get(namedtuple<Names, Args...> nt) noexcept {
+constexpr auto get(NamedTuple<Names, Args...> nt) noexcept {
     return ::std::get<N>(nt.tuple);
 }
 
@@ -110,12 +116,12 @@ constexpr auto get(namedtuple<Names, Args...> nt) noexcept {
 namespace std {
 
 template<::ctb::namedtuple::details::is_names Names, typename... Args>
-struct tuple_size<::ctb::namedtuple::namedtuple<Names, Args...>>
+struct tuple_size<::ctb::namedtuple::NamedTuple<Names, Args...>>
     : public ::std::integral_constant<::std::size_t, ::ctb::namedtuple::details::get_size<Names>()> {};
 
 template<::std::size_t N, ::ctb::namedtuple::details::is_names Names, typename... Args>
-struct tuple_element<N, ::ctb::namedtuple::namedtuple<Names, Args...>> {
-    using type = decltype(::std::get<N>(::std::declval<::ctb::namedtuple::namedtuple<Names, Args...>>().tuple));
+struct tuple_element<N, ::ctb::namedtuple::NamedTuple<Names, Args...>> {
+    using type = decltype(::std::get<N>(::std::declval<::ctb::namedtuple::NamedTuple<Names, Args...>>().tuple));
 };
 
 }  // namespace std
