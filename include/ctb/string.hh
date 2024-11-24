@@ -119,7 +119,7 @@ struct String {
     template<::std::size_t pos, ::std::size_t N_r = N - pos - 1>
     [[nodiscard]]
     constexpr auto substr() const noexcept {
-        static_assert(pos < N, "ctb::string::OutOfRangeError: pos out of range");
+        static_assert(pos < N, "ctb::string::IndexError: pos out of range");
 
         constexpr auto n = ::std::min(N_r, N - pos - 1);
         Char tmp_[n + 1]{};
@@ -138,11 +138,21 @@ struct String {
         return N - 1;
     }
 
+    [[nodiscard]]
+    constexpr auto begin() const noexcept {
+        return this->str.data();
+    }
+
+    [[nodiscard]]
+    constexpr auto end() const noexcept {
+        return this->str.data() + N - 1;
+    }
+
     template<is_char Char_r, ::std::size_t N_r>
     [[nodiscard]]
     constexpr bool operator==(Char_r const (&other)[N_r]) const noexcept {
         if constexpr (N <= N_r) {
-            if (!::std::equal(this->str.data(), this->str.data() + N - 1, other)) {
+            if (!::std::equal(this->str.begin(), this->str.end() - 1, other)) {
                 return false;
             }
             for (::std::size_t i{N - 1}; i < N_r; ++i) {
@@ -175,7 +185,7 @@ struct String {
     [[nodiscard]]
     constexpr bool operator==(::std::basic_string_view<Char_r> const& other) const noexcept {
         if (N < other.size()) {
-            if (!::std::equal(this->str.data(), this->str.data() + N - 1, other.begin())) {
+            if (!::std::equal(this->str.begin(), this->str.end() - 1, other.begin())) {
                 return false;
             }
             for (::std::size_t i{N - 1}; i < other.size(); ++i) {
@@ -223,7 +233,7 @@ constexpr auto utf32to8(String<Char, N> const& u32str) noexcept {
     u8_type tmp_[N * 4 - 3]{};
 
     auto index = ::std::size_t{};
-    for (auto u32chr : u32str.str.data()) {
+    for (auto u32chr : u32str) {
         // clang-format off
         assert(
             u32chr <= details::transcoding::CODE_POINT_MAX
@@ -369,10 +379,10 @@ constexpr auto concat_helper(T const& str) noexcept {
         return String{str};
     } else {
         // InternalError: please bug-report
-#ifndef NDEBUG
-        shutdown::terminate();
+#ifdef NDEBUG
+        shutdown::unreachable();
 #else  // ^^^ defined(NDEBUG) / vvv !defined(NDEBUG)
-        fatal_error::unreachable();
+        shutdown::terminate();
 #endif  // !defined(NDEBUG)
     }
 }

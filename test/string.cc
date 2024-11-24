@@ -98,7 +98,7 @@ consteval void test_metastr_in_template() noexcept {
     [[maybe_unused]] constexpr auto _ = Test<"abc">{};
 }
 
-int main() noexcept {
+inline void runtime_test_eq() noexcept {
     assert(String{"abc"} == ::std::u8string{u8"abc"});
     assert(String{"abc\0"} == ::std::u8string{u8"abc"});
     assert(String{"abc"} != ::std::u8string{u8"ab"});
@@ -113,6 +113,18 @@ int main() noexcept {
         concat("k", String{"aaa"}, ::std::string{"bbb"}, ::std::string_view{"ccc"})
         == ::std::string{"kaaabbbccc"}
     );
+}
+
+inline void runtime_test_iter() noexcept {
+    constexpr auto _1 = String{"abc"};
+    for (auto ch : _1) {
+        assert(ch == 'a' || ch == 'b' || ch == 'c');
+    }
+}
+
+int main() noexcept {
+    runtime_test_eq();
+    runtime_test_iter();
 
     return 0;
 }

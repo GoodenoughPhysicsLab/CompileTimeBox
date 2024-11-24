@@ -38,6 +38,22 @@ consteval void test_data() noexcept {
     static_assert(_1.data()[0] == 1u);
 }
 
+consteval void test_size() noexcept {
+    constexpr auto _1 = Vector{1u, 2u, 3u};
+    static_assert(_1.size() == 3u);
+}
+
+inline void runtime_test_iter() noexcept {
+    constexpr auto _1 = Vector{1u, 2u, 3u};
+    static_assert(*_1.begin() == 1u);
+    static_assert(*(_1.end() - 1) == 3u);
+    for (auto i : _1) {
+        assert(i == 1u || i == 2u || i == 3u);
+    }
+}
+
 int main() noexcept {
+    runtime_test_iter();
+
     return 0;
 }

@@ -7,12 +7,12 @@
 #include <tuple>
 #include <type_traits>
 
-#ifndef CTB_N_STL_SUPPORT
+#ifdef CTB_N_STL_SUPPORT
+    #include "string.hh"
+#else
     #define CTB_N_STL_SUPPORT
     #include "string.hh"
     #undef CTB_N_STL_SUPPORT
-#else
-    #include "string.hh"
 #endif
 
 namespace ctb::namedtuple::details {

@@ -72,6 +72,16 @@ struct Vector {
     }
 
     [[nodiscard]]
+    constexpr auto begin() const noexcept {
+        return this->arr;
+    }
+
+    [[nodiscard]]
+    constexpr auto end() const noexcept {
+        return this->arr + N;
+    }
+
+    [[nodiscard]]
     static constexpr len_type_ size() noexcept {
         return N;
     }

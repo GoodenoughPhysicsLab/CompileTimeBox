@@ -4,8 +4,10 @@ import multiprocessing
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-def build_dir(dir):
+def build_and_run(dir):
     os.system(f"cmake --build {dir} --config Debug")
+    os.chdir(dir)
+    os.system("ctest -C Debug")
 
 def test_clang():
     build_clang = os.path.join(PROJECT_DIR, "build-clang")
@@ -14,7 +16,7 @@ def test_clang():
         f"-G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang "
         f"> {os.devnull}"
     )
-    build_dir(build_clang)
+    build_and_run(build_clang)
 
 def test_gcc():
     build_gcc = os.path.join(PROJECT_DIR, "build-gcc")
@@ -23,7 +25,7 @@ def test_gcc():
         f"-G Ninja -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc "
         f"> {os.devnull}"
     )
-    build_dir(build_gcc)
+    build_and_run(build_gcc)
 
 def test_msvc():
     build_msvc = os.path.join(PROJECT_DIR, "build-msvc")
@@ -31,7 +33,7 @@ def test_msvc():
         f"cmake -S {os.path.join(PROJECT_DIR, 'test')} -B {build_msvc} -Wno-dev "
         f"> {os.devnull}"
     )
-    build_dir(build_msvc)
+    build_and_run(build_msvc)
 
 if __name__ == '__main__':
     for dir in os.listdir(PROJECT_DIR):
