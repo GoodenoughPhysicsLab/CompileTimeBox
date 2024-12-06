@@ -15,27 +15,34 @@ usage:
 #include <string_view>
 #include <ctb/namedtuple.hh>
 
+using namespace ctb::namedtuple;
+
 void example() noexcept {
-    constexpr auto nt = ctb::namedtuple::make_namedtuple<"a", "b", u8"hhh">(1, 2, "hello");
-    static_assert(ctb::namedtuple::get<"a">(nt) == 1);
-    static_assert(::std::string_view{ctb::namedtuple::get<u8"hhh">(nt)} == "hello");
+    constexpr auto nt = make_namedtuple<"a", "b", u8"hhh">(1, 2, "hello");
+    static_assert(get<"a">(nt) == 1);
+    static_assert(::std::string_view{get<u8"hhh">(nt)} == "hello");
     auto [a, b, hhh] = nt;
 }
 ```
 
-show more examples in [test_namedtuple](./test/test_namedtuple.cc).
+show more examples in [test_namedtuple](./test/namedtuple.cc).
+
+## vector
+show more examples in [test_vector](./test/vector.cc).
 
 ## string
 To support use string in compile time (even template), I wrote `string`.
 ```cpp
 #include <ctb/string.hh>
 
+using namespace ctb::string;
+
 void example() noexcept {
-    constexpr auto str1 = ctb::string::string{"hello"};
-    constexpr auto str2 = ctb::string::string{"world"};
+    constexpr auto str1 = String{"hello"};
+    constexpr auto str2 = String{"world"};
     static_assert(str1 == "hello"); // also support ::std::string, ::std::string_view and other encoding
-    static_assert(ctb::string::concat(str1, str2) == "helloworld");
+    static_assert(concat(str1, str2) == "helloworld");
 }
 ```
 
-show more examples in [test_string](./test/test_string.cc).
+show more examples in [test_string](./test/string.cc).
