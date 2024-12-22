@@ -36,7 +36,7 @@ SpaceBeforeParensOptions:
   AfterRequiresInExpression: false
   AfterRequiresInClause: true
 
-SortIncludes: CaseSensitive
+SortIncludes: Never
 
 # Special formatting for templates and macros
 MacroBlockBegin: ''

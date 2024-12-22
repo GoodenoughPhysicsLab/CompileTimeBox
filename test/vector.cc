@@ -7,6 +7,9 @@ consteval void test_init() noexcept {
     [[maybe_unused]] constexpr auto _1 = Vector{{1u, 2u}};
     [[maybe_unused]] constexpr auto _2 = Vector{1u, 2u};
     [[maybe_unused]] constexpr auto _3{_1};
+    int arr[]{1u, 2u};
+    [[maybe_unused]] auto _4 = Vector{arr};
+    [[maybe_unused]] constexpr Vector<int, 2> _5{};
 }
 
 consteval void test_eq() noexcept {
