@@ -26,7 +26,7 @@ struct Vector {
     using difference_type = ::std::ptrdiff_t;
     T arr[N]{};
 
-    constexpr Vector() noexcept = default;
+    constexpr Vector() noexcept = delete;
 
     constexpr Vector(T const (&data)[N]) noexcept {
         ::std::copy(data, data + N, this->arr);
