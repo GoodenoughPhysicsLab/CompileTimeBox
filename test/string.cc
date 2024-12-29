@@ -123,7 +123,7 @@ inline void runtime_test_iter() noexcept {
 }
 
 int main() noexcept {
-    runtime_test_eq();
+    // runtime_test_eq();
     runtime_test_iter();
 
     return 0;

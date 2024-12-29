@@ -1,8 +1,8 @@
 #pragma once
 
-#if !__cpp_concepts >= 201907L
-    #error "namedtuple requires at least c++20"
-#endif
+#if !__cpp_explicit_this_parameter >= 202110L
+    #error "This library requires C++23"
+#endif // !__cpp_explicit_this_parameter >= 202110L
 
 #include <tuple>
 #include <type_traits>

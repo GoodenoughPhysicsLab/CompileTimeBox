@@ -1,8 +1,8 @@
 #pragma once
 
-#if !__cpp_concepts >= 201907L
-    #error "This library requires C++20"
-#endif  // !__cpp_concepts >= 201907L
+#if !__cpp_explicit_this_parameter >= 202110L
+    #error "This library requires C++23"
+#endif // !__cpp_explicit_this_parameter >= 202110L
 
 #include <algorithm>
 #include <cassert>
@@ -118,19 +118,19 @@ struct String {
      */
     template<::std::size_t pos, ::std::size_t N_r = N - pos - 1>
     [[nodiscard]]
-    constexpr auto substr() const noexcept {
+    constexpr auto substr(this auto const& self) noexcept {
         static_assert(pos < N, "ctb::string::IndexError: pos out of range");
 
         constexpr auto n = ::std::min(N_r, N - pos - 1);
         Char tmp_[n + 1]{};
-        ::std::copy(this->str.data() + pos, this->str.data() + pos + n, tmp_);
+        ::std::copy(self.str.data() + pos, self.str.data() + pos + n, tmp_);
         return String<Char, n + 1>{tmp_};
     }
 
     [[nodiscard]]
-    constexpr auto pop_back() const noexcept {
+    constexpr auto pop_back(this auto const& self) noexcept {
         static_assert(N > 1, "Empty string can't be poped back");
-        return this->substr<0, String::size() - 1>();
+        return self.template substr<0, String::size() - 1>();
     }
 
     [[nodiscard]]
@@ -139,20 +139,20 @@ struct String {
     }
 
     [[nodiscard]]
-    constexpr auto begin() const noexcept {
-        return this->str.data();
+    constexpr auto begin(this auto const& self) noexcept {
+        return self.str.data();
     }
 
     [[nodiscard]]
-    constexpr auto end() const noexcept {
-        return this->str.data() + N - 1;
+    constexpr auto end(this auto const& self) noexcept {
+        return self.str.data() + N - 1;
     }
 
     template<is_char Char_r, ::std::size_t N_r>
     [[nodiscard]]
-    constexpr bool operator==(Char_r const (&other)[N_r]) const noexcept {
+    constexpr bool operator==(this auto const& self, Char_r const (&other)[N_r]) noexcept {
         if constexpr (N <= N_r) {
-            if (!::std::equal(this->str.begin(), this->str.end() - 1, other)) {
+            if (!::std::equal(self.str.begin(), self.str.end() - 1, other)) {
                 return false;
             }
             for (::std::size_t i{N - 1}; i < N_r; ++i) {
@@ -162,11 +162,11 @@ struct String {
             }
             return true;
         } else {
-            if (!::std::equal(other, other + N_r - 1, this->str.data())) {
+            if (!::std::equal(other, other + N_r - 1, self.str.data())) {
                 return false;
             }
             for (::std::size_t i{N_r - 1}; i < N; ++i) {
-                if (this->str[i] != '\0') {
+                if (self.str[i] != '\0') {
                     return false;
                 }
             }
@@ -176,16 +176,16 @@ struct String {
 
     template<is_char Char_r, ::std::size_t N_r>
     [[nodiscard]]
-    constexpr bool operator==(String<Char_r, N_r> const& other) const noexcept {
-        return *this == other.str.data();
+    constexpr bool operator==(this auto const& self, String<Char_r, N_r> const& other) noexcept {
+        return self == other.str.data();
     }
 
 #ifndef CTB_N_STL_SUPPORT
     template<is_char Char_r>
     [[nodiscard]]
-    constexpr bool operator==(::std::basic_string_view<Char_r> const& other) const noexcept {
+    constexpr bool operator==(this auto const& self, ::std::basic_string_view<Char_r> const& other) noexcept {
         if (N < other.size()) {
-            if (!::std::equal(this->str.begin(), this->str.end() - 1, other.begin())) {
+            if (!::std::equal(self.str.begin(), self.str.end() - 1, other.begin())) {
                 return false;
             }
             for (::std::size_t i{N - 1}; i < other.size(); ++i) {
@@ -195,11 +195,11 @@ struct String {
             }
             return true;
         } else {
-            if (!::std::equal(other.begin(), other.end(), this->str.data())) {
+            if (!::std::equal(other.begin(), other.end(), self.str.data())) {
                 return false;
             }
             for (::std::size_t i{other.size()}; i < N; ++i) {
-                if (this->str.data()[i] != '\0') {
+                if (self.str.data()[i] != '\0') {
                     return false;
                 }
             }
@@ -209,18 +209,18 @@ struct String {
 
     template<is_char Char_r>
     [[nodiscard]]
-    constexpr bool operator==(::std::basic_string<Char_r> const other) const noexcept {
-        return *this == ::std::basic_string_view<Char_r>{other};
+    constexpr bool operator==(this auto const& self, ::std::basic_string<Char_r> const other) noexcept {
+        return self == ::std::basic_string_view<Char_r>{other};
     }
 
     [[nodiscard]]
-    constexpr operator ::std::basic_string<Char>() const noexcept {
-        return ::std::basic_string<Char>{str.data(), N - 1};
+    constexpr operator ::std::basic_string<Char>(this auto const& self) noexcept {
+        return ::std::basic_string<Char>{self.str.data(), N - 1};
     }
 
     [[nodiscard]]
-    constexpr operator ::std::basic_string_view<Char>() const noexcept {
-        return ::std::basic_string_view<Char>{str.data(), N - 1};
+    constexpr operator ::std::basic_string_view<Char>(this auto const& self) noexcept {
+        return ::std::basic_string_view<Char>{self.str.data(), N - 1};
     }
 #endif  // !defined(CTB_N_STL_SUPPORT)
 };

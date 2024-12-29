@@ -1,8 +1,8 @@
 #pragma once
 
-#if !__cpp_concepts >= 201907L
-    #error "namedtuple requires at least c++20"
-#endif
+#if !__cpp_explicit_this_parameter >= 202110L
+    #error "This library requires C++23"
+#endif // !__cpp_explicit_this_parameter >= 202110L
 
 #include <algorithm>
 #include <cassert>
@@ -45,7 +45,7 @@ struct Vector {
 
     template<::std::integral U, len_type_ N_r>
     [[nodiscard]]
-    constexpr bool operator==(U const (&other)[N_r]) const noexcept {
+    constexpr bool operator==(this auto const& self, U const (&other)[N_r]) noexcept {
         // clang-format off
         if constexpr (
             sizeof(N) != sizeof(N_r)
@@ -54,31 +54,31 @@ struct Vector {
         ) {
             return false;
         } else {
-            return ::std::equal(this->arr, this->arr + N - 1, other);
+            return ::std::equal(self.arr, self.arr + N - 1, other);
         }
         // clang-format on
     }
 
     template<::std::integral U, len_type_ N_r>
     [[nodiscard]]
-    constexpr bool operator==(Vector<U, N_r> const& other) const noexcept {
-        return *this == other.arr;
+    constexpr bool operator==(this auto const& self, Vector<U, N_r> const& other) noexcept {
+        return self == other.arr;
     }
 
     [[nodiscard]]
-    constexpr auto operator[](size_type index) const noexcept {
+    constexpr auto operator[](this auto const& self, size_type index) noexcept {
         assert(index < N);
-        return this->arr[index];
+        return self.arr[index];
     }
 
     [[nodiscard]]
-    constexpr auto begin() const noexcept {
-        return this->arr;
+    constexpr auto begin(this auto const& self) noexcept {
+        return self.arr;
     }
 
     [[nodiscard]]
-    constexpr auto end() const noexcept {
-        return this->arr + N;
+    constexpr auto end(this auto const& self) noexcept {
+        return self.arr + N;
     }
 
     [[nodiscard]]
@@ -87,20 +87,20 @@ struct Vector {
     }
 
     [[nodiscard]]
-    constexpr auto data() const noexcept -> decltype(auto) {
-        return (this->arr);
+    constexpr auto data(this auto const& self) noexcept -> decltype(auto) {
+        return (self.arr);
     }
 
     template<difference_type Start, difference_type End>
     [[nodiscard]]
-    constexpr auto slice() const noexcept {
+    constexpr auto slice(this auto const& self) noexcept {
         constexpr auto start = Start < 0 ? N + Start : Start;
         constexpr auto end = End < 0 ? N + End : End;
 
         static_assert(start < end, "ctb::vector::IndexError: out of range");
 
         value_type tmp_[end - start]{};
-        ::std::copy(this->arr + start, this->arr + end, tmp_);
+        ::std::copy(self.arr + start, self.arr + end, tmp_);
         return Vector<value_type, end - start>{tmp_};
     }
 };
