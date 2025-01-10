@@ -1,12 +1,11 @@
 #pragma once
 
 #if !__cpp_concepts >= 201907L
-    #error "namedtuple requires at least c++20"
-#endif
+    #error "`ctb` requires at least C++20"
+#endif  // !__cpp_concepts >= 201907L
 
 #include <algorithm>
 #include <cassert>
-#include <concepts>
 #include <cstddef>
 #include <type_traits>
 
@@ -17,7 +16,7 @@ using len_type_ = ::std::size_t;
 /* A compile-time Vector
  * it may looks like ::std::array
  */
-template<::std::integral T, len_type_ N>
+template<typename T, len_type_ N>
 struct Vector {
     static_assert(N > 0);
 
@@ -43,7 +42,7 @@ struct Vector {
         ::std::copy(other.arr, other.arr + N, this->arr);
     }
 
-    template<::std::integral U, len_type_ N_r>
+    template<typename U, len_type_ N_r>
     [[nodiscard]]
     constexpr bool operator==(U const (&other)[N_r]) const noexcept {
         // clang-format off
@@ -59,7 +58,7 @@ struct Vector {
         // clang-format on
     }
 
-    template<::std::integral U, len_type_ N_r>
+    template<typename U, len_type_ N_r>
     [[nodiscard]]
     constexpr bool operator==(Vector<U, N_r> const& other) const noexcept {
         return *this == other.arr;
@@ -90,28 +89,28 @@ struct Vector {
     constexpr auto data() const noexcept -> decltype(auto) {
         return (this->arr);
     }
-
-    template<difference_type Start, difference_type End>
-    [[nodiscard]]
-    constexpr auto slice() const noexcept {
-        constexpr auto start = Start < 0 ? N + Start : Start;
-        constexpr auto end = End < 0 ? N + End : End;
-
-        static_assert(start < end, "ctb::vector::IndexError: out of range");
-
-        value_type tmp_[end - start]{};
-        ::std::copy(this->arr + start, this->arr + end, tmp_);
-        return Vector<value_type, end - start>{tmp_};
-    }
 };
 
 template<typename Arg, typename... Args>
     requires (::std::same_as<Arg, Args> && ...)
 Vector(Arg, Args...) -> Vector<Arg, sizeof...(Args) + 1>;
 
-template<::std::size_t I, ::std::integral T, len_type_ N>
+template<::std::size_t I, typename T, len_type_ N>
 constexpr auto get(Vector<T, N> const& vec) noexcept {
     return vec[I];
+}
+
+template<::std::ptrdiff_t Start, ::std::ptrdiff_t End, typename T, len_type_ N>
+[[nodiscard]]
+consteval auto slice(Vector<T, N> const& vec) noexcept {
+    constexpr auto start = Start < 0 ? N + Start : Start;
+    constexpr auto end = End < 0 ? N + End : End;
+
+    static_assert(start < end, "ctb::vector::IndexError: out of range");
+
+    T tmp_[end - start]{};
+    ::std::copy(vec.arr + start, vec.arr + end, tmp_);
+    return Vector{tmp_};
 }
 
 }  // namespace ctb::vector

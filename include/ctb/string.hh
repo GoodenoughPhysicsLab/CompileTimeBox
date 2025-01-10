@@ -1,7 +1,7 @@
 #pragma once
 
 #if !__cpp_concepts >= 201907L
-    #error "This library requires C++20"
+    #error "`ctb` requires at least C++20"
 #endif  // !__cpp_concepts >= 201907L
 
 #include <algorithm>
@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <type_traits>
 
-#include "shutdown.hh"
+#include "exception.hh"
 #include "vector.hh"
 
 #ifndef CTB_N_STL_SUPPORT
@@ -101,18 +101,14 @@ struct String {
 
     constexpr String() noexcept = delete;
 
-    // clang-format off
     constexpr String(Char const (&arr)[N]) noexcept
-        : str{arr}
-    {
+        : str{arr} {
         assert(arr[N - 1] == 0);  // must ends with '\0'
     }
 
     constexpr String(String<Char, N> const& other) noexcept
-        : str{other.str}
-    {}
-
-    // clang-format on
+        : str{other.str} {
+    }
 
     /* Same behavior as ::std::string::substr
      */
@@ -380,9 +376,9 @@ constexpr auto concat_helper(T const& str) noexcept {
     } else {
         // InternalError: please bug-report
 #ifdef NDEBUG
-        shutdown::unreachable();
+        exception::unreachable();
 #else  // ^^^ defined(NDEBUG) / vvv !defined(NDEBUG)
-        shutdown::terminate();
+        exception::terminate();
 #endif  // !defined(NDEBUG)
     }
 }
@@ -448,5 +444,15 @@ constexpr auto reduce_trailing_zero() noexcept {
         return reduce_trailing_zero<str.pop_back()>();
     }
 }
+
+// template<is_char Char, ::std::size_t N, ::std::size_t M>
+// [[nodiscard]]
+// constexpr exception::Optional<::std::size_t> find(String<Char, N> str, String<Char, M> substr) noexcept {
+//     if constexpr (N < M) {
+//         return exception::nullopt;
+//     } else {
+//         //
+//     }
+// }
 
 }  // namespace ctb::string

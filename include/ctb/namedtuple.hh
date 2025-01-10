@@ -1,8 +1,8 @@
 #pragma once
 
 #if !__cpp_concepts >= 201907L
-    #error "namedtuple requires at least c++20"
-#endif
+    #error "`ctb` requires at least C++20"
+#endif  // !__cpp_concepts >= 201907L
 
 #include <tuple>
 #include <type_traits>

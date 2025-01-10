@@ -13,7 +13,7 @@ def test_clang():
     build_clang = os.path.join(PROJECT_DIR, "build-clang")
     os.system(
         f"cmake -S {os.path.join(PROJECT_DIR, 'test')} -B {build_clang} -Wno-dev "
-        f"-G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang "
+        f"-G Ninja -DCMAKE_CXX_COMPILER=clang++ "
         f"> {os.devnull}"
     )
     build_and_run(build_clang)
@@ -22,7 +22,7 @@ def test_gcc():
     build_gcc = os.path.join(PROJECT_DIR, "build-gcc")
     os.system(
         f"cmake -S {os.path.join(PROJECT_DIR, 'test')} -B {build_gcc} -Wno-dev "
-        f"-G Ninja -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc "
+        f"-G Ninja -DCMAKE_CXX_COMPILER=g++ "
         f"> {os.devnull}"
     )
     build_and_run(build_gcc)

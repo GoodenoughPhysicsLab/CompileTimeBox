@@ -31,9 +31,9 @@ consteval void test_index() noexcept {
 
 consteval void test_slice() noexcept {
     constexpr auto _1 = Vector{1u, 2u, 3u, 4u, 5u};
-    static_assert(_1.slice<0, 3>() == Vector{1u, 2u, 3u});
-    static_assert(_1.slice<2, 4>() == Vector{3u, 4u});
-    static_assert(_1.slice<2, -1>() == Vector{3u, 4u});
+    static_assert(slice<0, 3>(_1) == Vector{1u, 2u, 3u});
+    static_assert(slice<2, 4>(_1) == Vector{3u, 4u});
+    static_assert(slice<2, -1>(_1) == Vector{3u, 4u});
 }
 
 consteval void test_data() noexcept {
