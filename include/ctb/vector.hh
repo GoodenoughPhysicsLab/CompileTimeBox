@@ -96,6 +96,7 @@ template<typename Arg, typename... Args>
 Vector(Arg, Args...) -> Vector<Arg, sizeof...(Args) + 1>;
 
 template<::std::size_t I, typename T, len_type_ N>
+[[nodiscard]]
 constexpr auto get(Vector<T, N> const& vec) noexcept {
     return vec[I];
 }

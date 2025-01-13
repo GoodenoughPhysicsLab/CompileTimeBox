@@ -7,7 +7,7 @@
 
 using namespace ctb::string;
 
-consteval void test_metastr_init() noexcept {
+consteval void test_str_init() noexcept {
     constexpr auto _1 = String{"abc"};
     constexpr auto _2 = String{_1};
     constexpr auto _3 = String{L"abc"};
@@ -21,7 +21,7 @@ consteval void test_metastr_init() noexcept {
     static_assert(_1 == _6);
 }
 
-consteval void test_metastr_eq() noexcept {
+consteval void test_str_eq() noexcept {
     static_assert(::std::u8string_view{u8"abc"} == String{"abc"});
     static_assert(String{"abc"} == "abc");
     static_assert(String{"abc"} != "ab");
@@ -32,6 +32,9 @@ consteval void test_metastr_eq() noexcept {
     static_assert(String{"abc"} == String{"abc\0\0"});
     static_assert(String{"abc"} != String{"abcd"});
     static_assert(String{"abc"} != String{"ab"});
+    static_assert(String{"hello\0aa"} == String{"hello"});
+    static_assert(String{"hello\0aa"} != String{"hello0"});
+    static_assert(String{"hello\0aa"} == String{"hello\0\0\0\0"});
     static_assert(u8"abc" == String{"abc"});
     static_assert(u8"ab" != String{"abc"});
     static_assert(u8"abcd" != String{"abc"});
@@ -89,6 +92,12 @@ consteval void test_reduce_trailing_zero() noexcept {
     constexpr auto _3 = String{u8"abc"};
     static_assert(_2.len == 4);
     static_assert(::std::equal(_2.str.data(), _2.str.data() + _2.len, _3.str.data()));
+}
+
+consteval void test_find() noexcept {
+    // constexpr auto _1 = String{"Hello, World!"};
+    // constexpr auto _2 = String{"World"};
+    // static_assert(find(_1, _2).value());
 }
 
 template<String Str>

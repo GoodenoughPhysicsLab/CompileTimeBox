@@ -72,7 +72,7 @@ public:
         : val_{::std::forward<T>(val)}, has_value_{true} {
     }
 
-    explicit constexpr Optional(NullOpt_t&) noexcept
+    constexpr Optional(NullOpt_t&) noexcept
         : val_{}, has_value_{false} {
     }
 

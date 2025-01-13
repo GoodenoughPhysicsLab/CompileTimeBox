@@ -81,6 +81,11 @@ concept is_utf32 =
 #endif  // !defined(_WIN32)
     ::std::is_same_v<::std::remove_cv_t<Char>, char32_t>;
 
+template<typename Char, typename Char_r>
+concept is_same_encoding = details::transcoding::is_utf8<Char> && details::transcoding::is_utf8<Char_r> ||
+                           details::transcoding::is_utf16<Char> && details::transcoding::is_utf16<Char_r> ||
+                           details::transcoding::is_utf32<Char> && details::transcoding::is_utf32<Char_r>;
+
 }  // namespace details::transcoding
 
 /* class string
@@ -95,6 +100,8 @@ concept is_utf32 =
  */
 template<is_char Char, ::std::size_t N>
 struct String {
+    static_assert(N != 0);
+
     using value_type = Char;
     static constexpr auto len{N};
     ::ctb::vector::Vector<Char, N> str;
@@ -103,7 +110,14 @@ struct String {
 
     constexpr String(Char const (&arr)[N]) noexcept
         : str{arr} {
-        assert(arr[N - 1] == 0);  // must ends with '\0'
+#ifndef NDEBUG
+        for (size_t i{}; i < N; ++i) {
+            if (arr[i] == '\0') {
+                return;
+            }
+        }
+        exception::terminate();
+#endif  // !defined(NDEBUG)
     }
 
     constexpr String(String<Char, N> const& other) noexcept
@@ -126,7 +140,7 @@ struct String {
     [[nodiscard]]
     constexpr auto pop_back() const noexcept {
         static_assert(N > 1, "Empty string can't be poped back");
-        return this->substr<0, String::size() - 1>();
+        return this->substr<0, String<Char, N>::size() - 1>();
     }
 
     [[nodiscard]]
@@ -147,10 +161,16 @@ struct String {
     template<is_char Char_r, ::std::size_t N_r>
     [[nodiscard]]
     constexpr bool operator==(Char_r const (&other)[N_r]) const noexcept {
-        if constexpr (N <= N_r) {
-            if (!::std::equal(this->str.begin(), this->str.end() - 1, other)) {
+        constexpr auto min_num = ::std::min(N, N_r);
+        for (size_t i{}; i < min_num; ++i) {
+            if (static_cast<::std::ptrdiff_t>(this->str[i]) != static_cast<::std::ptrdiff_t>(other[i])) {
                 return false;
             }
+            if (this->str[i] == '\0') {
+                return true;
+            }
+        }
+        if constexpr (N <= N_r) {
             for (::std::size_t i{N - 1}; i < N_r; ++i) {
                 if (other[i] != '\0') {
                     return false;
@@ -158,9 +178,6 @@ struct String {
             }
             return true;
         } else {
-            if (!::std::equal(other, other + N_r - 1, this->str.data())) {
-                return false;
-            }
             for (::std::size_t i{N_r - 1}; i < N; ++i) {
                 if (this->str[i] != '\0') {
                     return false;
@@ -321,18 +338,11 @@ constexpr auto utf16to8(String<Char, N> const& u16str) noexcept {
 template<is_char Char_r, is_char Char, ::std::size_t N>
 [[nodiscard]]
 constexpr auto code_cvt(String<Char, N> const& str) noexcept {
-    // clang-format off
-    if constexpr (
-        details::transcoding::is_utf8<Char> && details::transcoding::is_utf8<Char_r>
-        || details::transcoding::is_utf16<Char> && details::transcoding::is_utf16<Char_r>
-        || details::transcoding::is_utf32<Char> && details::transcoding::is_utf32<Char_r>
-    ) {
+    if constexpr (details::transcoding::is_same_encoding<Char, Char_r>) {
         Char_r tmp_[N]{};
         ::std::copy(str.str.data(), str.str.data() + N - 1, tmp_);
         return String{tmp_};
-    }
-    // clang-format on
-    else if constexpr (details::transcoding::is_utf32<Char> && details::transcoding::is_utf8<Char_r>) {
+    } else if constexpr (details::transcoding::is_utf32<Char> && details::transcoding::is_utf8<Char_r>) {
         return details::transcoding::utf32to8<Char, N, Char_r>(str);
     } else if constexpr (details::transcoding::is_utf16<Char> && details::transcoding::is_utf8<Char_r>) {
         return details::transcoding::utf16to8<Char, N, Char_r>(str);
@@ -445,13 +455,24 @@ constexpr auto reduce_trailing_zero() noexcept {
     }
 }
 
-// template<is_char Char, ::std::size_t N, ::std::size_t M>
+// template<is_char Char, ::std::size_t N, typename Char_r, ::std::size_t M>
+//     requires (details::transcoding::is_same_encoding<Char, Char_r>)
 // [[nodiscard]]
-// constexpr exception::Optional<::std::size_t> find(String<Char, N> str, String<Char, M> substr) noexcept {
-//     if constexpr (N < M) {
+// constexpr exception::Optional<::std::size_t> find(String<Char, N> str, String<Char_r, M> substr) noexcept {
+//     if constexpr (N < M || N == 1) {
 //         return exception::nullopt;
 //     } else {
-//         //
+//         // kmp
+//         vector::Vector<unsigned int, M> pi{};
+//         for (::std::size_t i{1}, j{}; i < M; ++i) {
+//             while (j > 0 && substr.str[j] != substr.str[i]) {
+//                 j = pi[j - 1];
+//             }
+//             if (substr.str[j] == substr.str[i]) {
+//                 ++j;
+//             }
+//             pi.push_back(j);
+//         }
 //     }
 // }
 
