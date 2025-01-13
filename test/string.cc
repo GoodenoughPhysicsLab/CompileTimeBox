@@ -21,6 +21,13 @@ consteval void test_str_init() noexcept {
     static_assert(_1 == _6);
 }
 
+consteval void test_index() noexcept {
+    constexpr auto _1 = String{"abc"};
+    static_assert(_1[0] == 'a');
+    static_assert(_1[1] == 'b');
+    static_assert(_1[2] == 'c');
+}
+
 consteval void test_str_eq() noexcept {
     static_assert(::std::u8string_view{u8"abc"} == String{"abc"});
     static_assert(String{"abc"} == "abc");
@@ -92,12 +99,16 @@ consteval void test_reduce_trailing_zero() noexcept {
     constexpr auto _3 = String{u8"abc"};
     static_assert(_2.len == 4);
     static_assert(::std::equal(_2.str.data(), _2.str.data() + _2.len, _3.str.data()));
+    static_assert(details::get_first_l0_(_1) == 3);
+    constexpr auto _4 = String{"abc\0a"};
+    static_assert(details::get_first_l0_(_4) == 3);
+    static_assert(details::get_first_l0_(_3) == 3);
 }
 
 consteval void test_find() noexcept {
-    // constexpr auto _1 = String{"Hello, World!"};
-    // constexpr auto _2 = String{"World"};
-    // static_assert(find(_1, _2).value());
+    constexpr auto _1 = String{"Hello, World!"};
+    constexpr auto _2 = String{"World"};
+    static_assert(find<_1, _2>().value() == 7);
 }
 
 template<String Str>

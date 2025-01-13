@@ -158,6 +158,12 @@ struct String {
         return this->str.data() + N - 1;
     }
 
+    [[nodiscard]]
+    constexpr auto operator[](::std::size_t i) const noexcept {
+        assert(i < N);
+        return this->str[i];
+    }
+
     template<is_char Char_r, ::std::size_t N_r>
     [[nodiscard]]
     constexpr bool operator==(Char_r const (&other)[N_r]) const noexcept {
@@ -195,7 +201,7 @@ struct String {
 
 #ifndef CTB_N_STL_SUPPORT
     template<is_char Char_r>
-    [[nodiscard]]
+    [[nodiscard]]  // TODO bugfix: "abc\0abc" == "abc"
     constexpr bool operator==(::std::basic_string_view<Char_r> const& other) const noexcept {
         if (N < other.size()) {
             if (!::std::equal(this->str.begin(), this->str.end() - 1, other.begin())) {
@@ -445,35 +451,74 @@ constexpr auto concat(Strs const&... strs) noexcept {
 
 #endif  // !defined(CTB_N_STL_SUPPORT)
 
+namespace details {
+
+template<is_char Char, ::std::size_t N>
+[[nodiscard]]
+constexpr ::std::size_t get_first_l0_(String<Char, N> str) noexcept {
+    for (::std::size_t i{}; i <= str.size(); ++i) {
+        if (str[i] == '\0') {
+            return i;
+        }
+    }
+    exception::terminate();
+}
+
+}  // namespace details
+
 template<String str>
 [[nodiscard]]
 constexpr auto reduce_trailing_zero() noexcept {
-    if constexpr (str.len == 1 || str.str[str.len - 2] != 0 && str.str[str.len - 1] == 0) {
-        return str;
-    } else {
-        return reduce_trailing_zero<str.pop_back()>();
-    }
+    return str.template substr<0, details::get_first_l0_(str)>();
 }
 
-// template<is_char Char, ::std::size_t N, typename Char_r, ::std::size_t M>
-//     requires (details::transcoding::is_same_encoding<Char, Char_r>)
-// [[nodiscard]]
-// constexpr exception::Optional<::std::size_t> find(String<Char, N> str, String<Char_r, M> substr) noexcept {
-//     if constexpr (N < M || N == 1) {
-//         return exception::nullopt;
-//     } else {
-//         // kmp
-//         vector::Vector<unsigned int, M> pi{};
-//         for (::std::size_t i{1}, j{}; i < M; ++i) {
-//             while (j > 0 && substr.str[j] != substr.str[i]) {
-//                 j = pi[j - 1];
-//             }
-//             if (substr.str[j] == substr.str[i]) {
-//                 ++j;
-//             }
-//             pi.push_back(j);
-//         }
-//     }
-// }
+template<String str_, String substr_>
+    requires (details::transcoding::is_same_encoding<typename decltype(str_)::value_type, typename decltype(substr_)::value_type>)
+[[nodiscard]]
+constexpr exception::Optional<::std::size_t> find() noexcept {
+    constexpr auto str = reduce_trailing_zero<str_>();
+    constexpr auto substr = reduce_trailing_zero<substr_>();
+    constexpr auto N = str.size();
+    constexpr auto M = substr.size();
+    if constexpr (N < M) {
+        return exception::nullopt;
+    } else {
+        // kmp
+        unsigned int prefix_len{}, i{1};
+        auto next = vector::Vector<unsigned int, M>{};
+        while (i < substr.size()) {
+            if (substr[i] == substr[prefix_len]) [[unlikely]] {
+                next.arr[i++] = ++prefix_len;
+            } else {
+                if (prefix_len == 0) {
+                    next.arr[i++] = 0;
+                } else {
+                    prefix_len = next[prefix_len - 1];
+                }
+            }
+        }
+
+        i = 0;
+        unsigned int j{};
+        while (i < str.size()) {
+            auto chr = str[i];
+            if (chr == substr[j]) {
+                if (j == substr.size() - 1) {
+                    return i - j;
+                } else {
+                    ++i;
+                    ++j;
+                }
+            } else {
+                if (j == 0) {
+                    ++i;
+                } else {
+                    j = next[j - 1];
+                }
+            }
+        }
+        return exception::nullopt;
+    }
+}
 
 }  // namespace ctb::string
