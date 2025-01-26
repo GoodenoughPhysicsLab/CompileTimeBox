@@ -5,7 +5,7 @@
 #endif  // !__cpp_concepts >= 201907L
 
 #include <utility>
-#include <concepts>
+#include <type_traits>
 #if defined(_MSC_VER) && !defined(__clang__)
     #include <cstdlib>
 #endif
@@ -56,20 +56,21 @@ inline struct NullOpt_t {
 } nullopt{NullOpt_t::NullOpt_t_Construct_{}};
 
 template<typename T>
-    requires (!::std::same_as<T, NullOpt_t>)
+    requires (!::std::is_same_v<::std::remove_cv_t<T>, NullOpt_t>)
 class Optional {
-    T val_;
+    using value_type = ::std::remove_cv_t<T>;
+    value_type val_;
     bool has_value_;
 
 public:
     constexpr Optional() noexcept = delete;
 
-    constexpr Optional(T const& val) noexcept
+    constexpr Optional(value_type const& val) noexcept
         : val_{val}, has_value_{true} {
     }
 
-    constexpr Optional(T&& val) noexcept
-        : val_{::std::forward<T>(val)}, has_value_{true} {
+    constexpr Optional(value_type&& val) noexcept
+        : val_{::std::forward<decltype(val)>(val)}, has_value_{true} {
     }
 
     constexpr Optional(NullOpt_t&) noexcept
@@ -77,27 +78,53 @@ public:
     }
 
     [[nodiscard]]
+#if __cpp_explicit_this_parameter >= 202110L
+    constexpr bool has_value(this Optional const& self) noexcept {
+        return self.has_value_;
+    }
+#else
     constexpr bool has_value() const noexcept {
         return this->has_value_;
     }
+#endif
 
     [[nodiscard]]
+#if __cpp_explicit_this_parameter >= 202110L
+    constexpr auto value(this Optional const& self) noexcept -> decltype(auto) {
+        if (self.has_value()) [[likely]] {
+            return (self.val_);
+        } else {
+            terminate();
+        }
+    }
+#else
     constexpr auto value() const noexcept -> decltype(auto) {
-        if (this->has_value()) {
+        if (this->has_value()) [[likely]] {
             return (this->val_);
         } else {
             terminate();
         }
     }
+#endif
 
     [[nodiscard]]
-    constexpr auto value_or(T const& default_value) const noexcept -> decltype(auto) {
-        if (this->has_value()) {
+#if __cpp_explicit_this_parameter >= 202110L
+    constexpr auto value_or(this Optional const& self, value_type const& default_value) noexcept -> decltype(auto) {
+        if (self.has_value()) [[likely]] {
+            return (self.val_);
+        } else {
+            return (default_value);
+        }
+    }
+#else
+    constexpr auto value_or(value_type const& default_value) const noexcept -> decltype(auto) {
+        if (this->has_value()) [[likely]] {
             return (this->val_);
         } else {
             return (default_value);
         }
     }
+#endif
 };
 
 }  // namespace ctb::exception
