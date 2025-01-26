@@ -59,7 +59,12 @@ template<typename T>
     requires (!::std::is_same_v<::std::remove_cv_t<T>, NullOpt_t>)
 class Optional {
     using value_type = ::std::remove_cv_t<T>;
-    value_type val_;
+
+    union {
+        char dummy_;
+        value_type val_;
+    };
+
     bool has_value_;
 
 public:
@@ -74,7 +79,7 @@ public:
     }
 
     constexpr Optional(NullOpt_t&) noexcept
-        : val_{}, has_value_{false} {
+        : dummy_{}, has_value_{false} {
     }
 
     [[nodiscard]]
@@ -88,43 +93,140 @@ public:
     }
 #endif
 
+    /* Use has_value() instead
+     */
+    constexpr operator bool() noexcept = delete;
+
     [[nodiscard]]
 #if __cpp_explicit_this_parameter >= 202110L
-    constexpr auto value(this Optional const& self) noexcept -> decltype(auto) {
-        if (self.has_value()) [[likely]] {
-            return (self.val_);
-        } else {
+    constexpr auto value(this Optional& self) noexcept -> decltype(auto) {
+    #if !defined(NDEBUG)
+        if (self.has_value() == false) [[unlikely]] {
             terminate();
         }
+    #endif  // !defined(NDEBUG)
+        return (self.val_);
     }
 #else
-    constexpr auto value() const noexcept -> decltype(auto) {
-        if (this->has_value()) [[likely]] {
-            return (this->val_);
-        } else {
+    constexpr auto value() & noexcept -> decltype(auto) {
+    #if !defined(NDEBUG)
+        if (this->has_value() == false) [[unlikely]] {
             terminate();
         }
+    #endif  // !defined(NDEBUG)
+        return (this->val_);
     }
 #endif
 
     [[nodiscard]]
 #if __cpp_explicit_this_parameter >= 202110L
-    constexpr auto value_or(this Optional const& self, value_type const& default_value) noexcept -> decltype(auto) {
+    constexpr auto value(this Optional const& self) noexcept -> decltype(auto) {
+    #if !defined(NDEBUG)
+        if (self.has_value() == false) [[unlikely]] {
+            terminate();
+        }
+    #endif  // !defined(NDEBUG)
+        return (self.val_);
+    }
+#else
+    constexpr auto value() const & noexcept -> decltype(auto) {
+    #if !defined(NDEBUG)
+        if (this->has_value() == false) [[unlikely]] {
+            terminate();
+        }
+    #endif  // !defined(NDEBUG)
+        return (this->val_);
+    }
+#endif
+
+    [[nodiscard]]
+#if __cpp_explicit_this_parameter >= 202110L
+    constexpr auto value(this Optional&& self) noexcept -> decltype(auto) {
+    #if !defined(NDEBUG)
+        if (self.has_value() == false) [[unlikely]] {
+            terminate();
+        }
+    #endif  // !defined(NDEBUG)
+        return ::std::move(self.val_);
+    }
+#else
+    constexpr auto value() && noexcept -> decltype(auto) {
+    #if !defined(NDEBUG)
+        if (this->has_value() == false) [[unlikely]] {
+            terminate();
+        }
+    #endif  // !defined(NDEBUG)
+        return ::std::move(this->val_);
+    }
+#endif
+
+    [[nodiscard]]
+#if __cpp_explicit_this_parameter >= 202110L
+    constexpr auto value(this Optional const&& self) noexcept -> decltype(auto) {
+    #if !defined(NDEBUG)
+        if (self.has_value() == false) [[unlikely]] {
+            terminate();
+        }
+    #endif  // !defined(NDEBUG)
+        return ::std::move(self.val_);
+    }
+#else
+    constexpr auto value() const && noexcept -> decltype(auto) {
+    #if !defined(NDEBUG)
+        if (this->has_value() == false) [[unlikely]] {
+            terminate();
+        }
+    #endif  // !defined(NDEBUG)
+        return ::std::move(this->val_);
+    }
+#endif
+
+    template<typename U>
+        requires (::std::is_copy_constructible_v<value_type> && ::std::is_convertible_v<U, value_type>)
+    [[nodiscard]]
+#if __cpp_explicit_this_parameter >= 202110L
+    constexpr auto value_or(this Optional const& self, U&& default_value) noexcept {
         if (self.has_value()) [[likely]] {
-            return (self.val_);
+            return self.val_;
         } else {
-            return (default_value);
+            return static_cast<value_type>(::std::forward<U>(default_value));
         }
     }
 #else
-    constexpr auto value_or(value_type const& default_value) const noexcept -> decltype(auto) {
+    constexpr auto value_or(U&& default_value) const & noexcept {
         if (this->has_value()) [[likely]] {
-            return (this->val_);
+            return this->val_;
         } else {
-            return (default_value);
+            return static_cast<value_type>(::std::forward<U>(default_value));
         }
     }
 #endif
+
+    template<typename U>
+        requires (::std::is_copy_constructible_v<value_type> && ::std::is_convertible_v<U, value_type>)
+    [[nodiscard]]
+#if __cpp_explicit_this_parameter >= 202110L
+    constexpr auto value_or(this Optional&& self, U&& default_value) noexcept {
+        if (self.has_value()) [[likely]] {
+            return ::std::move(self.val_);
+        } else {
+            return static_cast<value_type>(::std::forward<U>(default_value));
+        }
+    }
+#else
+    constexpr auto value_or(U&& default_value) && noexcept {
+        if (this->has_value()) [[likely]] {
+            return ::std::move(this->val_);
+        } else {
+            return static_cast<value_type>(::std::forward<U>(default_value));
+        }
+    }
+#endif
+
+    /* No need to support, use value() instead
+     */
+    constexpr auto operator*() noexcept = delete;
+    constexpr auto operator->() noexcept = delete;
 };
 
 }  // namespace ctb::exception

@@ -2,7 +2,8 @@
 
 This repository contains some useful compile-time tools for C++.
 
-every feature is header-only, requires C++20, tested on `MSVC`, `g++`, `clang++`. (even freestanding? I'm not sure, but it's accually possible)
+every feature is header-only, requires at least C++20, support `cl`, `g++`, `clang++`, `Windows`, `Linux`, `MacOS`.
+(even freestanding? I'm not sure, but it's accually possible)
 
 ## namedtuple
 
