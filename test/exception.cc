@@ -1,3 +1,7 @@
+#ifdef NDEBUG
+    #undef NDEBUG
+#endif
+
 #include <cassert>
 #include <ctb/exception.hh>
 
@@ -20,8 +24,10 @@ consteval void test_optional() noexcept {
 
 inline void runtime_tests() noexcept {
     auto x = Optional<int>{1};
-    x.value() = 2;
+    x = 2;
     assert(x.value() == 2);
+    x.reset();
+    assert(!x.has_value());
 }
 
 int main() noexcept {
