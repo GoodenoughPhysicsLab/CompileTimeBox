@@ -4,6 +4,7 @@
     #error "`ctb` requires at least C++20"
 #endif  // !__cpp_concepts >= 201907L
 
+#include <new>
 #include <utility>
 #include <type_traits>
 #if defined(_MSC_VER) && !defined(__clang__)
@@ -70,6 +71,7 @@ class Optional {
     bool has_value_;
 
 public:
+    // use Optional{nullopt} instead
     constexpr Optional() noexcept = delete;
 
 #if __cpp_explicit_this_parameter >= 202110L
@@ -337,6 +339,41 @@ public:
             this->~Optional();
             this->has_value_ = false;
         }
+    }
+#endif
+
+#if __cpp_explicit_this_parameter >= 202110L
+    constexpr auto swap(Optional& other, this Optional& self) noexcept {
+        using ::std::swap;
+        swap(self.val_, other.val_);
+        swap(self.has_value_, other.has_value_);
+    }
+#else
+    constexpr void swap(Optional& other) noexcept {
+        using ::std::swap;
+        swap(this->val_, other.val_);
+        swap(this->has_value_, other.has_value_);
+    }
+#endif
+
+    template<typename U, typename... Args>
+        requires (::std::is_constructible_v<value_type, U, Args...>)
+    [[nodiscard]]
+#if __cpp_explicit_this_parameter >= 202110L
+    constexpr auto emplace(this auto&& self, U&& value, Args&&... args) noexcept {
+        if (self.has_value()) [[unlikely]] {
+            self.~Optional();
+        }
+        new (&self.val_) value_type(::std::forward<U>(value), ::std::forward<Args>(args)...);
+        self.has_value_ = true;
+    }
+#else
+    constexpr auto emplace(U&& value, Args&&... args) noexcept {
+        if (this->has_value()) [[unlikely]] {
+            this->~Optional();
+        }
+        new (&this->val_) value_type(::std::forward<U>(value), ::std::forward<Args>(args)...);
+        this->has_value_ = true;
     }
 #endif
 };

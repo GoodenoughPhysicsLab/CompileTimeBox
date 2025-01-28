@@ -28,6 +28,8 @@ inline void runtime_tests() noexcept {
     assert(x.value() == 2);
     x.reset();
     assert(!x.has_value());
+    x.emplace(5);
+    assert(x.value() == 5);
 }
 
 int main() noexcept {
