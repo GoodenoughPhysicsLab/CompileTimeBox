@@ -74,19 +74,11 @@ public:
     // use Optional{nullopt} instead
     constexpr Optional() noexcept = delete;
 
-#if __cpp_explicit_this_parameter >= 202110L
-    constexpr ~Optional(this Optional const& self) noexcept {
-        if (self.has_value()) [[likely]] {
-            self.val_.~value_type();
-        }
-    }
-#else
     constexpr ~Optional() noexcept {
         if (this->has_value()) [[likely]] {
             this->val_.~value_type();
         }
     }
-#endif
 
     constexpr Optional(value_type const& val) noexcept
         requires (::std::is_copy_constructible_v<value_type>)
@@ -343,7 +335,7 @@ public:
 #endif
 
 #if __cpp_explicit_this_parameter >= 202110L
-    constexpr auto swap(Optional& other, this Optional& self) noexcept {
+    constexpr auto swap(this Optional& self, Optional& other) noexcept {
         using ::std::swap;
         swap(self.val_, other.val_);
         swap(self.has_value_, other.has_value_);

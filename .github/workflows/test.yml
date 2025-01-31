@@ -13,12 +13,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Detect features
+      run: |
+        cmake -S detect -B detect-build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=23 -Wno-dev
+        cmake --build detect-build --config Debug
+
     - name: Build tests
       run: |
-        cmake -S test -B build -Wno-dev
+        cmake -S test -B build -DCMAKE_BUILD_TYPE=Debug -Wno-dev
         cmake --build build --config Debug
 
     - name: Run tests
+      working-directory: build
       run: |
-        cd build
         ctest -C Debug --output-on-failure
