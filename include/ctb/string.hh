@@ -1,8 +1,8 @@
 #pragma once
 
-#if !__cpp_concepts >= 201907L
+#if __cpp_concepts < 201907L
     #error "`ctb` requires at least C++20"
-#endif  // !__cpp_concepts >= 201907L
+#endif  // __cpp_concepts < 201907L
 
 #include <algorithm>
 #include <cassert>
@@ -99,16 +99,16 @@ concept is_same_encoding = details::transcoding::is_utf8<Char> && details::trans
  * std::string or std::string_view.
  */
 template<is_char Char, ::std::size_t N>
-struct String {
+struct string {
     static_assert(N != 0);
 
     using value_type = Char;
     static constexpr auto len{N};
-    ::ctb::vector::Vector<Char, N> str;
+    ::ctb::vector::vector<Char, N> str;
 
-    constexpr String() noexcept = delete;
+    constexpr string() noexcept = delete;
 
-    constexpr String(Char const (&arr)[N]) noexcept
+    constexpr string(Char const (&arr)[N]) noexcept
         : str{arr} {
 #ifndef NDEBUG
         for (size_t i{}; i < N; ++i) {
@@ -120,7 +120,7 @@ struct String {
 #endif  // !defined(NDEBUG)
     }
 
-    constexpr String(String<Char, N> const& other) noexcept
+    constexpr string(string<Char, N> const& other) noexcept
         : str{other.str} {
     }
 
@@ -134,13 +134,13 @@ struct String {
         constexpr auto n = ::std::min(N_r, N - pos - 1);
         Char tmp_[n + 1]{};
         ::std::copy(this->str.data() + pos, this->str.data() + pos + n, tmp_);
-        return String<Char, n + 1>{tmp_};
+        return string<Char, n + 1>{tmp_};
     }
 
     [[nodiscard]]
     constexpr auto pop_back() const noexcept {
         static_assert(N > 1, "Empty string can't be poped back");
-        return this->substr<0, String<Char, N>::size() - 1>();
+        return this->substr<0, string<Char, N>::size() - 1>();
     }
 
     [[nodiscard]]
@@ -195,7 +195,7 @@ struct String {
 
     template<is_char Char_r, ::std::size_t N_r>
     [[nodiscard]]
-    constexpr bool operator==(String<Char_r, N_r> const& other) const noexcept {
+    constexpr bool operator==(string<Char_r, N_r> const& other) const noexcept {
         return *this == other.str.data();
     }
 
@@ -248,7 +248,7 @@ namespace details::transcoding {
 
 template<details::transcoding::is_utf32 Char, ::std::size_t N, details::transcoding::is_utf8 u8_type>
 [[nodiscard]]
-constexpr auto utf32to8(String<Char, N> const& u32str) noexcept {
+constexpr auto utf32to8(string<Char, N> const& u32str) noexcept {
     u8_type tmp_[N * 4 - 3]{};
 
     auto index = ::std::size_t{};
@@ -278,12 +278,12 @@ constexpr auto utf32to8(String<Char, N> const& u32str) noexcept {
         }
     }
 
-    return String{tmp_};
+    return string{tmp_};
 }
 
 template<details::transcoding::is_utf16 Char, ::std::size_t N, details::transcoding::is_utf8 u8_type>
 [[nodiscard]]
-constexpr auto utf16to8(String<Char, N> const& u16str) noexcept {
+constexpr auto utf16to8(string<Char, N> const& u16str) noexcept {
     u8_type tmp_[4 * N - 3]{};
 
     auto index = ::std::size_t{};
@@ -324,7 +324,7 @@ constexpr auto utf16to8(String<Char, N> const& u16str) noexcept {
         }
     }
 
-    return String{tmp_};
+    return string{tmp_};
 }
 
 }  // namespace details::transcoding
@@ -343,11 +343,11 @@ constexpr auto utf16to8(String<Char, N> const& u16str) noexcept {
  */
 template<is_char Char_r, is_char Char, ::std::size_t N>
 [[nodiscard]]
-constexpr auto code_cvt(String<Char, N> const& str) noexcept {
+constexpr auto code_cvt(string<Char, N> const& str) noexcept {
     if constexpr (details::transcoding::is_same_encoding<Char, Char_r>) {
         Char_r tmp_[N]{};
         ::std::copy(str.str.data(), str.str.data() + N - 1, tmp_);
-        return String{tmp_};
+        return string{tmp_};
     } else if constexpr (details::transcoding::is_utf32<Char> && details::transcoding::is_utf8<Char_r>) {
         return details::transcoding::utf32to8<Char, N, Char_r>(str);
     } else if constexpr (details::transcoding::is_utf16<Char> && details::transcoding::is_utf8<Char_r>) {
@@ -361,7 +361,7 @@ template<typename>
 constexpr bool is_ctb_string_ = false;
 
 template<is_char Char, ::std::size_t N>
-constexpr bool is_ctb_string_<String<Char, N>> = true;
+constexpr bool is_ctb_string_<string<Char, N>> = true;
 
 }  // namespace details
 
@@ -388,7 +388,7 @@ constexpr auto concat_helper(T const& str) noexcept {
     if constexpr (is_ctb_string<T>) {
         return str;
     } else if constexpr (is_c_str<T>) {
-        return String{str};
+        return string{str};
     } else {
         // InternalError: please bug-report
 #ifdef NDEBUG
@@ -416,7 +416,7 @@ constexpr auto concat(Str1 const& str1, Strs const&... strs) noexcept {
     ::std::size_t index{}, offset{};
     ::std::copy(str1.str.data(), str1.str.data() + Str1::len - 1, tmp_);
     (::std::copy(strs.str.data(), strs.str.data() + Strs::len - 1, (offset += lens[index++], tmp_ + offset)), ...);
-    return String{tmp_};
+    return string{tmp_};
 }
 
 #ifndef CTB_N_STL_SUPPORT
@@ -455,7 +455,7 @@ namespace details {
 
 template<is_char Char, ::std::size_t N>
 [[nodiscard]]
-constexpr ::std::size_t get_first_l0_(String<Char, N> str) noexcept {
+constexpr ::std::size_t get_first_l0_(string<Char, N> str) noexcept {
     for (::std::size_t i{}; i <= str.size(); ++i) {
         if (str[i] == '\0') {
             return i;
@@ -466,16 +466,16 @@ constexpr ::std::size_t get_first_l0_(String<Char, N> str) noexcept {
 
 }  // namespace details
 
-template<String str>
+template<string str>
 [[nodiscard]]
 constexpr auto reduce_trailing_zero() noexcept {
     return str.template substr<0, details::get_first_l0_(str)>();
 }
 
-template<String str_, String substr_>
+template<string str_, string substr_>
     requires (details::transcoding::is_same_encoding<typename decltype(str_)::value_type, typename decltype(substr_)::value_type>)
 [[nodiscard]]
-constexpr exception::Optional<::std::size_t> find() noexcept {
+constexpr exception::optional<::std::size_t> find() noexcept {
     constexpr auto str = reduce_trailing_zero<str_>();
     constexpr auto substr = reduce_trailing_zero<substr_>();
     constexpr auto N = str.size();
@@ -485,7 +485,7 @@ constexpr exception::Optional<::std::size_t> find() noexcept {
     } else {
         // kmp
         unsigned int prefix_len{}, i{1};
-        auto next = vector::Vector<unsigned int, M>{};
+        auto next = vector::vector<unsigned int, M>{};
         while (i < substr.size()) {
             if (substr[i] == substr[prefix_len]) [[unlikely]] {
                 next.arr[i++] = ++prefix_len;

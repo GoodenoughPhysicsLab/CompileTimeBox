@@ -39,8 +39,8 @@ To support use string in compile time (even template), I wrote `string`.
 using namespace ctb::string;
 
 void example() noexcept {
-    constexpr auto str1 = String{"hello"};
-    constexpr auto str2 = String{"world"};
+    constexpr auto str1 = string{"hello"};
+    constexpr auto str2 = string{"world"};
     static_assert(str1 == "hello"); // also support ::std::string, ::std::string_view and other encoding
     static_assert(concat(str1, str2) == "helloworld");
 }

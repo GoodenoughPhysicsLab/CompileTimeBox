@@ -1,3 +1,4 @@
+#include <cmath>
 #ifdef NDEBUG
     #undef NDEBUG
 #endif
@@ -8,31 +9,58 @@
 using namespace ctb::exception;
 
 struct NoDefaultConstructor_ {
+    int n_;
     constexpr NoDefaultConstructor_() noexcept = delete;
+    constexpr NoDefaultConstructor_(int n) : n_{n} {}
 };
 
 consteval void test_optional() noexcept {
-    constexpr auto x = Optional<int>{1};
-    constexpr auto y = Optional<int>{nullopt};
-    static_assert(x.has_value() == true);
-    static_assert(y.has_value() == false);
-    static_assert(x.value() == 1);
-    static_assert(y.value_or(1) == 1);
-    [[maybe_unused]] constexpr auto _7 = Optional<NoDefaultConstructor_>{nullopt};
-    static_assert(_7.has_value() == false);
+    constexpr auto x = optional<int>{1};
+    constexpr auto y = optional<int>{nullopt};
+    static_assert(has_value(x) == true);
+    static_assert(has_value(y) == false);
+    static_assert(get_value(x) == 1);
+    static_assert(value_or(y, 1) == 1);
+    constexpr auto _7 = optional<NoDefaultConstructor_>{nullopt};
+    static_assert(has_value(_7) == false);
 }
 
-inline void runtime_tests() noexcept {
-    auto x = Optional<int>{1};
+consteval void test_expected() noexcept {
+    constexpr int num{};
+    constexpr auto x = expected<int, int>{1};
+    constexpr auto y = expected<int, int>{ctb::exception::unexpected{1}};
+    constexpr auto z = expected<int, int>{num};
+    static_assert(has_value(x) == true);
+    static_assert(has_value(y) == false);
+    static_assert(has_value(z) == true);
+    static_assert(get_value(x) == 1);
+    static_assert(get_error(y) == 1);
+    static_assert(value_or(x, 2) == 1);
+    static_assert(value_or(y, 2) == 2);
+    // static_assert(value_or(y, 2.5) == 2); // error, implicit conversion is not allowed
+}
+
+inline void test_optional_in_runtime() noexcept {
+    auto x = optional<int>{1};
     x = 2;
-    assert(x.value() == 2);
+    assert(get_value(x) == 2);
     x.reset();
-    assert(!x.has_value());
+    assert(has_value(x) == false);
     x.emplace(5);
-    assert(x.value() == 5);
+    assert(get_value(x) == 5);
+}
+
+inline void test_expected_in_runtime() noexcept {
+    auto x = expected<int, int>{1};
+    x = 2;
+    assert(get_value(x) == 2);
+    auto y = expected<NoDefaultConstructor_, int>{ctb::exception::unexpected{0}};
+    y = NoDefaultConstructor_{1};
+    assert(get_value(y).n_ == 1);
 }
 
 int main() noexcept {
-    runtime_tests();
+    test_optional_in_runtime();
+    test_expected_in_runtime();
     return 0;
 }
