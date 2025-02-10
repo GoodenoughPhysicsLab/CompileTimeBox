@@ -48,15 +48,14 @@ inline void unreachable() noexcept {
 #endif
 }
 
-inline struct NullOpt_t {
-    struct NullOpt_t_Construct_ {};
-
-    constexpr NullOpt_t() noexcept = delete;
-    explicit constexpr NullOpt_t(NullOpt_t const&) noexcept = delete;
-
-    explicit constexpr NullOpt_t(NullOpt_t_Construct_ const&&) noexcept {
-    }
-} nullopt{NullOpt_t::NullOpt_t_Construct_{}};
+inline constexpr struct NullOpt_t {
+    constexpr NullOpt_t() noexcept = default;
+    constexpr ~NullOpt_t() noexcept = default;
+    constexpr NullOpt_t(NullOpt_t const&) noexcept = delete;
+    constexpr NullOpt_t(NullOpt_t const&&) noexcept = delete;
+    constexpr auto operator=(NullOpt_t const&) noexcept = delete;
+    constexpr auto operator=(NullOpt_t const&&) noexcept = delete;
+} nullopt{};
 
 template<typename T>
     requires (!::std::is_same_v<::std::remove_cvref_t<T>, NullOpt_t>)
@@ -90,9 +89,11 @@ public:
         : val_{::std::forward<decltype(val)>(val)}, has_value_{true} {
     }
 
-    constexpr Optional(NullOpt_t&) noexcept
+    constexpr Optional(NullOpt_t const&) noexcept
         : dummy_{}, has_value_{false} {
     }
+
+    constexpr Optional(NullOpt_t const&&) noexcept = delete;
 
     constexpr Optional(Optional const& other) noexcept
         requires (::std::is_copy_constructible_v<value_type>)
