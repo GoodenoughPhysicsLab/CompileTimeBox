@@ -107,6 +107,7 @@ struct string {
     ::ctb::vector::vector<Char, N> str;
 
     constexpr string() noexcept = delete;
+    constexpr ~string() noexcept = default;
 
     constexpr string(Char const (&arr)[N]) noexcept
         : str{arr} {

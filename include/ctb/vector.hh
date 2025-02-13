@@ -26,6 +26,7 @@ struct vector {
     T arr[N]{};
 
     constexpr vector() noexcept = default;
+    constexpr ~vector() noexcept = default;
 
     constexpr vector(T const (&data)[N]) noexcept {
         ::std::copy(data, data + N, this->arr);

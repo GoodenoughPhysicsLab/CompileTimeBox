@@ -51,12 +51,18 @@ consteval auto get_name() noexcept {
 
 template<is_names Names, ::std::size_t counter = 0>
 [[nodiscard]]
-consteval ::std::size_t get_size() noexcept {
+consteval ::std::size_t get_size_() noexcept {
     if constexpr (::std::is_void_v<typename Names::next_name>) {
         return counter + 1;
     } else {
-        return get_size<typename Names::next_name, counter + 1>();
+        return get_size_<typename Names::next_name, counter + 1>();
     }
+}
+
+template<is_names Names>
+[[nodiscard]]
+consteval ::std::size_t get_size() noexcept {
+    return get_size_<Names>();
 }
 
 }  // namespace ctb::namedtuple::details
@@ -75,6 +81,7 @@ struct namedtuple {
     constexpr namedtuple(Args&&... args) {
         this->tuple = ::std::make_tuple(::std::forward<Args>(args)...);
     }
+    constexpr ~namedtuple() noexcept = default;
 };
 
 template<string::string... Str, typename... Args>
