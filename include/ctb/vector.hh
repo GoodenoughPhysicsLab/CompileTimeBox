@@ -5,9 +5,9 @@
 #endif  // __cpp_concepts < 201907L
 
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
 #include <type_traits>
+#include "exception.hh"
 
 namespace ctb::vector {
 
@@ -33,9 +33,9 @@ struct vector {
     }
 
     template<typename Arg, typename... Args>
-        requires (::std::same_as<Arg, Args> && ...)
+        requires ((::std::is_same_v<Arg, Args> && ...) && sizeof...(Args) < N)
     constexpr vector(Arg const& arg, Args const&... args) noexcept {
-        Arg tmp_[]{arg, args...};
+        Arg const tmp_[N]{arg, args...};
         ::std::copy(tmp_, tmp_ + N, this->arr);
     }
 
@@ -66,12 +66,6 @@ struct vector {
     }
 
     [[nodiscard]]
-    constexpr auto operator[](size_type index) const noexcept {
-        assert(index < N);
-        return this->arr[index];
-    }
-
-    [[nodiscard]]
     constexpr auto begin() const noexcept {
         return this->arr;
     }
@@ -81,8 +75,13 @@ struct vector {
         return this->arr + N;
     }
 
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+    [[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+    [[msvc::forceinline]]
+#endif
     [[nodiscard]]
-    static constexpr len_type_ size() noexcept {
+    static constexpr auto size() noexcept {
         return N;
     }
 
@@ -96,12 +95,6 @@ template<typename Arg, typename... Args>
     requires (::std::same_as<Arg, Args> && ...)
 vector(Arg, Args...) -> vector<Arg, sizeof...(Args) + 1>;
 
-template<::std::size_t I, typename T, len_type_ N>
-[[nodiscard]]
-constexpr auto get(vector<T, N> const& vec) noexcept {
-    return vec[I];
-}
-
 template<::std::ptrdiff_t Start, ::std::ptrdiff_t End, typename T, len_type_ N>
 [[nodiscard]]
 consteval auto slice(vector<T, N> const& vec) noexcept {
@@ -113,6 +106,70 @@ consteval auto slice(vector<T, N> const& vec) noexcept {
     T tmp_[end - start]{};
     ::std::copy(vec.arr + start, vec.arr + end, tmp_);
     return vector{tmp_};
+}
+
+template<typename T, len_type_ N>
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
+[[nodiscard]]
+constexpr auto get_value(vector<T, N>& self, ::std::size_t index) noexcept -> T& {
+#if !defined(NDEBUG)
+    if (index >= N) [[unlikely]] {
+        exception::terminate();
+    }
+#endif
+    return self.arr[index];
+}
+
+template<typename T, len_type_ N>
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
+[[nodiscard]]
+constexpr auto get_value(vector<T, N> const& self, ::std::size_t index) noexcept -> T const& {
+#if !defined(NDEBUG)
+    if (index >= N) [[unlikely]] {
+        exception::terminate();
+    }
+#endif
+    return self.arr[index];
+}
+
+template<typename T, len_type_ N>
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
+[[nodiscard]]
+constexpr auto get_value(vector<T, N>&& self, ::std::size_t index) noexcept -> T&& {
+#if !defined(NDEBUG)
+    if (index >= N) [[unlikely]] {
+        exception::terminate();
+    }
+#endif
+    return ::std::move(self.arr[index]);
+}
+
+template<typename T, len_type_ N>
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
+[[nodiscard]]
+constexpr auto get_value(vector<T, N> const&& self, ::std::size_t index) noexcept -> T const&& {
+#if !defined(NDEBUG)
+    if (index >= N) [[unlikely]] {
+        exception::terminate();
+    }
+#endif
+    return ::std::move(self.arr[index]);
 }
 
 }  // namespace ctb::vector

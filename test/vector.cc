@@ -1,3 +1,8 @@
+#ifdef NDEBUG
+    #undef NDEBUG
+#endif
+
+#include <cassert>
 #include <cstdint>
 #include <ctb/vector.hh>
 
@@ -10,6 +15,7 @@ consteval void test_init() noexcept {
     int arr[]{1u, 2u};
     [[maybe_unused]] auto _4 = vector{arr};
     [[maybe_unused]] constexpr vector<int, 2> _5{};
+    [[maybe_unused]] constexpr vector<::std::size_t, 4> _6{1, 2};
 }
 
 consteval void test_eq() noexcept {
@@ -24,9 +30,9 @@ consteval void test_eq() noexcept {
 
 consteval void test_index() noexcept {
     constexpr auto _1 = vector{1u, 2u, 3u};
-    static_assert(_1[0] == 1u);
-    static_assert(_1[1] == 2u);
-    static_assert(_1[2] == 3u);
+    static_assert(get_value(_1, 0) == 1u);
+    static_assert(get_value(_1, 1) == 2u);
+    static_assert(get_value(_1, 2) == 3u);
 }
 
 consteval void test_slice() noexcept {

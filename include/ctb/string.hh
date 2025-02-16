@@ -162,7 +162,7 @@ struct string {
     [[nodiscard]]
     constexpr auto operator[](::std::size_t i) const noexcept {
         assert(i < N);
-        return this->str[i];
+        return vector::get_value(this->str, i);
     }
 
     template<is_char Char_r, ::std::size_t N_r>
@@ -170,10 +170,11 @@ struct string {
     constexpr bool operator==(Char_r const (&other)[N_r]) const noexcept {
         constexpr auto min_num = ::std::min(N, N_r);
         for (size_t i{}; i < min_num; ++i) {
-            if (static_cast<::std::ptrdiff_t>(this->str[i]) != static_cast<::std::ptrdiff_t>(other[i])) {
+            if (static_cast<::std::ptrdiff_t>(vector::get_value(this->str, i)) !=
+                static_cast<::std::ptrdiff_t>(other[i])) {
                 return false;
             }
-            if (this->str[i] == '\0') {
+            if (vector::get_value(this->str, i) == '\0') {
                 return true;
             }
         }
@@ -186,7 +187,7 @@ struct string {
             return true;
         } else {
             for (::std::size_t i{N_r - 1}; i < N; ++i) {
-                if (this->str[i] != '\0') {
+                if (vector::get_value(this->str, i) != '\0') {
                     return false;
                 }
             }
@@ -203,7 +204,8 @@ struct string {
 #ifndef CTB_N_STL_SUPPORT
     template<is_char Char_r>
     [[nodiscard]]  // TODO bugfix: "abc\0abc" == "abc"
-    constexpr bool operator==(::std::basic_string_view<Char_r> const& other) const noexcept {
+    constexpr bool
+    operator==(::std::basic_string_view<Char_r> const& other) const noexcept {
         if (N < other.size()) {
             if (!::std::equal(this->str.begin(), this->str.end() - 1, other.begin())) {
                 return false;
@@ -219,7 +221,7 @@ struct string {
                 return false;
             }
             for (::std::size_t i{other.size()}; i < N; ++i) {
-                if (this->str.data()[i] != '\0') {
+                if (vector::get_value(this->str, i) != '\0') {
                     return false;
                 }
             }
@@ -289,7 +291,7 @@ constexpr auto utf16to8(string<Char, N> const& u16str) noexcept {
 
     auto index = ::std::size_t{};
     for (::std::size_t i{}; i < N;) {
-        auto u32chr = static_cast<char32_t>(u16str.str[i++] & 0xffff);
+        auto u32chr = static_cast<char32_t>(vector::get_value(u16str.str, i++) & 0xffff);
         // clang-format off
         assert(
             u32chr < details::transcoding::TRAIL_SURROGATE_MIN
@@ -299,7 +301,7 @@ constexpr auto utf16to8(string<Char, N> const& u16str) noexcept {
             && u32chr <= details::transcoding::LEAD_SURROGATE_MAX)
         {
             assert(i < N);
-            auto const trail_surrogate = static_cast<char32_t>(u16str.str[i++] & 0xffff);
+            auto const trail_surrogate = static_cast<char32_t>(vector::get_value(u16str.str, i++) & 0xffff);
             assert(
                 trail_surrogate >= details::transcoding::TRAIL_SURROGATE_MIN
                 && trail_surrogate <= details::transcoding::TRAIL_SURROGATE_MAX
@@ -474,7 +476,8 @@ constexpr auto reduce_trailing_zero() noexcept {
 }
 
 template<string str_, string substr_>
-    requires (details::transcoding::is_same_encoding<typename decltype(str_)::value_type, typename decltype(substr_)::value_type>)
+    requires (details::transcoding::is_same_encoding<typename decltype(str_)::value_type,
+                                                     typename decltype(substr_)::value_type>)
 [[nodiscard]]
 constexpr exception::optional<::std::size_t> find() noexcept {
     constexpr auto str = reduce_trailing_zero<str_>();
@@ -494,7 +497,7 @@ constexpr exception::optional<::std::size_t> find() noexcept {
                 if (prefix_len == 0) {
                     next.arr[i++] = 0;
                 } else {
-                    prefix_len = next[prefix_len - 1];
+                    prefix_len = vector::get_value(next, prefix_len - 1);
                 }
             }
         }
@@ -514,7 +517,7 @@ constexpr exception::optional<::std::size_t> find() noexcept {
                 if (j == 0) {
                     ++i;
                 } else {
-                    j = next[j - 1];
+                    j = vector::get_value(next, j - 1);
                 }
             }
         }

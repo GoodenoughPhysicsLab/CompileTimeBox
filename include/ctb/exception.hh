@@ -434,6 +434,11 @@ concept is_expected = is_expected_v<::std::remove_cvref_t<T>>;
 
 template<typename T>
     requires (is_expected<T> || is_optional<T>)
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
 [[nodiscard]]
 constexpr auto has_value(T& t) noexcept -> bool& {
     return t.has_value_;
@@ -441,6 +446,11 @@ constexpr auto has_value(T& t) noexcept -> bool& {
 
 template<typename T>
     requires (is_expected<T> || is_optional<T>)
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
 [[nodiscard]]
 constexpr auto has_value(T const& t) noexcept -> bool const& {
     return t.has_value_;
@@ -448,6 +458,11 @@ constexpr auto has_value(T const& t) noexcept -> bool const& {
 
 template<typename T>
     requires (is_expected<T> || is_optional<T>)
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
 [[nodiscard]]
 constexpr auto has_value(T&& t) noexcept -> bool&& {
     return ::std::move(t.has_value_);
@@ -455,16 +470,27 @@ constexpr auto has_value(T&& t) noexcept -> bool&& {
 
 template<typename T>
     requires (is_expected<T> || is_optional<T>)
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
 [[nodiscard]]
 constexpr auto has_value(T const&& t) noexcept -> bool const&& {
     return ::std::move(t.has_value_);
 }
 
-/* get value from optional or expected, if it is not, terminate the program
+/**
+ * @brief get value from optional or expected, if it is not, terminate the program
  * @param self: the optional or expected object
  */
 template<typename T>
     requires (is_expected<T> || is_optional<T>)
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
 [[nodiscard]]
 constexpr auto get_value(T& self) noexcept -> typename T::value_type& {
 #ifndef NDEBUG
@@ -477,6 +503,11 @@ constexpr auto get_value(T& self) noexcept -> typename T::value_type& {
 
 template<typename T>
     requires (is_expected<T> || is_optional<T>)
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
 [[nodiscard]]
 constexpr auto get_value(T const& self) noexcept -> typename T::value_type const& {
 #ifndef NDEBUG
@@ -489,6 +520,11 @@ constexpr auto get_value(T const& self) noexcept -> typename T::value_type const
 
 template<typename T>
     requires (is_expected<T> || is_optional<T>)
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
 [[nodiscard]]
 constexpr auto get_value(T&& self) noexcept -> typename T::value_type&& {
 #ifndef NDEBUG
@@ -501,6 +537,11 @@ constexpr auto get_value(T&& self) noexcept -> typename T::value_type&& {
 
 template<typename T>
     requires (is_expected<T> || is_optional<T>)
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
 [[nodiscard]]
 constexpr auto get_value(T const&& self) noexcept -> typename T::value_type const&& {
 #ifndef NDEBUG
@@ -511,7 +552,8 @@ constexpr auto get_value(T const&& self) noexcept -> typename T::value_type cons
     return ::std::move(self.ok_);
 }
 
-/* get value from optional or expected, if it is not, return the value you passed
+/**
+ * @brief get value from optional or expected, if it is not, return the value you passed
  * @param self: the optional or expected object
  * @param val: the value you want to return if the optional or expected is not
  * @return: the value
@@ -557,7 +599,8 @@ constexpr auto value_or(T const&& self, U const&& val) noexcept -> typename T::v
     return ::std::move(self.ok_);
 }
 
-/* get the error value from an expected
+/**
+ * @brief get the error value from an expected
  */
 template<is_expected T>
 [[nodiscard]]
