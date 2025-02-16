@@ -1,9 +1,7 @@
-#include <cmath>
 #ifdef NDEBUG
     #undef NDEBUG
 #endif
 
-#include <cassert>
 #include <ctb/exception.hh>
 
 using namespace ctb::exception;
@@ -43,20 +41,20 @@ consteval void test_expected() noexcept {
 inline void test_optional_in_runtime() noexcept {
     auto x = optional<int>{1};
     x = 2;
-    assert(get_value(x) == 2);
+    assert_true(get_value(x) == 2);
     x.reset();
-    assert(has_value(x) == false);
+    assert_true(has_value(x) == false);
     x.emplace(5);
-    assert(get_value(x) == 5);
+    assert_true(get_value(x) == 5);
 }
 
 inline void test_expected_in_runtime() noexcept {
     auto x = expected<int, int>{1};
     x = 2;
-    assert(get_value(x) == 2);
+    assert_true(get_value(x) == 2);
     auto y = expected<NoDefaultConstructor_, int>{ctb::exception::unexpected{0}};
     y = NoDefaultConstructor_{1};
-    assert(get_value(y).n_ == 1);
+    assert_true(get_value(y).n_ == 1);
 }
 
 int main() noexcept {

@@ -46,17 +46,11 @@ struct vector {
     template<typename U, len_type_ N_r>
     [[nodiscard]]
     constexpr bool operator==(U const (&other)[N_r]) const noexcept {
-        // clang-format off
-        if constexpr (
-            sizeof(N) != sizeof(N_r)
-            || ::std::is_unsigned_v<T> ^ ::std::is_unsigned_v<U>
-            || N != N_r
-        ) {
+        if constexpr (sizeof(N) != sizeof(N_r) || ::std::is_unsigned_v<T> ^ ::std::is_unsigned_v<U> || N != N_r) {
             return false;
         } else {
             return ::std::equal(this->arr, this->arr + N - 1, other);
         }
-        // clang-format on
     }
 
     template<typename U, len_type_ N_r>
@@ -91,6 +85,19 @@ struct vector {
     }
 };
 
+namespace details {
+
+template<typename T>
+constexpr bool is_vector_ = false;
+
+template<typename T, ::std::size_t N>
+constexpr bool is_vector_<vector<T, N>> = true;
+
+}
+
+template<typename T>
+concept is_vector = details::is_vector_<::std::remove_cvref_t<T>>;
+
 template<typename Arg, typename... Args>
     requires (::std::same_as<Arg, Args> && ...)
 vector(Arg, Args...) -> vector<Arg, sizeof...(Args) + 1>;
@@ -108,68 +115,20 @@ consteval auto slice(vector<T, N> const& vec) noexcept {
     return vector{tmp_};
 }
 
-template<typename T, len_type_ N>
+template<is_vector T>
 #if __has_cpp_attribute(__gnu__::__always_inline__)
 [[__gnu__::__always_inline__]]
 #elif __has_cpp_attribute(msvc::forceinline)
 [[msvc::forceinline]]
 #endif
 [[nodiscard]]
-constexpr auto get_value(vector<T, N>& self, ::std::size_t index) noexcept -> T& {
-#if !defined(NDEBUG)
-    if (index >= N) [[unlikely]] {
-        exception::terminate();
+constexpr auto get_value(T&& self, ::std::size_t index) noexcept -> decltype(auto) {
+    exception::assert_true(index < self.size());
+    if constexpr (::std::is_lvalue_reference_v<T>) {
+        return self.arr[index];
+    } else {
+        return ::std::move(self.arr[index]);
     }
-#endif
-    return self.arr[index];
-}
-
-template<typename T, len_type_ N>
-#if __has_cpp_attribute(__gnu__::__always_inline__)
-[[__gnu__::__always_inline__]]
-#elif __has_cpp_attribute(msvc::forceinline)
-[[msvc::forceinline]]
-#endif
-[[nodiscard]]
-constexpr auto get_value(vector<T, N> const& self, ::std::size_t index) noexcept -> T const& {
-#if !defined(NDEBUG)
-    if (index >= N) [[unlikely]] {
-        exception::terminate();
-    }
-#endif
-    return self.arr[index];
-}
-
-template<typename T, len_type_ N>
-#if __has_cpp_attribute(__gnu__::__always_inline__)
-[[__gnu__::__always_inline__]]
-#elif __has_cpp_attribute(msvc::forceinline)
-[[msvc::forceinline]]
-#endif
-[[nodiscard]]
-constexpr auto get_value(vector<T, N>&& self, ::std::size_t index) noexcept -> T&& {
-#if !defined(NDEBUG)
-    if (index >= N) [[unlikely]] {
-        exception::terminate();
-    }
-#endif
-    return ::std::move(self.arr[index]);
-}
-
-template<typename T, len_type_ N>
-#if __has_cpp_attribute(__gnu__::__always_inline__)
-[[__gnu__::__always_inline__]]
-#elif __has_cpp_attribute(msvc::forceinline)
-[[msvc::forceinline]]
-#endif
-[[nodiscard]]
-constexpr auto get_value(vector<T, N> const&& self, ::std::size_t index) noexcept -> T const&& {
-#if !defined(NDEBUG)
-    if (index >= N) [[unlikely]] {
-        exception::terminate();
-    }
-#endif
-    return ::std::move(self.arr[index]);
 }
 
 }  // namespace ctb::vector

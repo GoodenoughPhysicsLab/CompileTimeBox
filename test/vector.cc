@@ -33,6 +33,14 @@ consteval void test_index() noexcept {
     static_assert(get_value(_1, 0) == 1u);
     static_assert(get_value(_1, 1) == 2u);
     static_assert(get_value(_1, 2) == 3u);
+
+    ctb::vector::vector v{1, 22};
+    auto& a = ctb::vector::get_value(v, 1);
+    static_assert(std::is_const_v<::std::remove_reference_t<decltype(a)>> == false);
+
+    constexpr ctb::vector::vector vc{1, 22};
+    auto& ac = ctb::vector::get_value(vc, 1);
+    static_assert(std::is_const_v<::std::remove_reference_t<decltype(ac)>> == true);
 }
 
 consteval void test_slice() noexcept {

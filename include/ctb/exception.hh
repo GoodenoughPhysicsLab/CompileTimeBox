@@ -48,6 +48,32 @@ inline void unreachable() noexcept {
 #endif
 }
 
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
+constexpr void assert_true(bool cond) noexcept {
+#if !defined(NDEBUG)
+    if (cond == false) [[unlikely]] {
+        ::ctb::exception::terminate();
+    }
+#endif  // !defined(NDEBUG)
+}
+
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
+constexpr void assert_false(bool cond) noexcept {
+#if !defined(NDEBUG)
+    if (cond == true) [[unlikely]] {
+        ::ctb::exception::terminate();
+    }
+#endif  // !defined(NDEBUG)
+}
+
 inline constexpr struct nullopt_t {
     constexpr nullopt_t() noexcept = default;
     constexpr ~nullopt_t() noexcept = default;
@@ -440,44 +466,12 @@ template<typename T>
 [[msvc::forceinline]]
 #endif
 [[nodiscard]]
-constexpr auto has_value(T& t) noexcept -> bool& {
-    return t.has_value_;
-}
-
-template<typename T>
-    requires (is_expected<T> || is_optional<T>)
-#if __has_cpp_attribute(__gnu__::__always_inline__)
-[[__gnu__::__always_inline__]]
-#elif __has_cpp_attribute(msvc::forceinline)
-[[msvc::forceinline]]
-#endif
-[[nodiscard]]
-constexpr auto has_value(T const& t) noexcept -> bool const& {
-    return t.has_value_;
-}
-
-template<typename T>
-    requires (is_expected<T> || is_optional<T>)
-#if __has_cpp_attribute(__gnu__::__always_inline__)
-[[__gnu__::__always_inline__]]
-#elif __has_cpp_attribute(msvc::forceinline)
-[[msvc::forceinline]]
-#endif
-[[nodiscard]]
-constexpr auto has_value(T&& t) noexcept -> bool&& {
-    return ::std::move(t.has_value_);
-}
-
-template<typename T>
-    requires (is_expected<T> || is_optional<T>)
-#if __has_cpp_attribute(__gnu__::__always_inline__)
-[[__gnu__::__always_inline__]]
-#elif __has_cpp_attribute(msvc::forceinline)
-[[msvc::forceinline]]
-#endif
-[[nodiscard]]
-constexpr auto has_value(T const&& t) noexcept -> bool const&& {
-    return ::std::move(t.has_value_);
+constexpr auto has_value(T&& t) noexcept -> decltype(auto) {
+    if constexpr (::std::is_lvalue_reference_v<T>) {
+        return t.has_value_;
+    } else {
+        return ::std::move(t.has_value_);
+    }
 }
 
 /**
@@ -492,64 +486,13 @@ template<typename T>
 [[msvc::forceinline]]
 #endif
 [[nodiscard]]
-constexpr auto get_value(T& self) noexcept -> typename T::value_type& {
-#ifndef NDEBUG
-    if (has_value(self) == false) [[unlikely]] {
-        terminate();
+constexpr auto get_value(T&& self) noexcept -> decltype(auto) {
+    assert_true(has_value(self));
+    if constexpr (::std::is_lvalue_reference_v<T>) {
+        return self.ok_;
+    } else {
+        return ::std::move(self.ok_);
     }
-#endif  // !defined(NDEBUG)
-    return self.ok_;
-}
-
-template<typename T>
-    requires (is_expected<T> || is_optional<T>)
-#if __has_cpp_attribute(__gnu__::__always_inline__)
-[[__gnu__::__always_inline__]]
-#elif __has_cpp_attribute(msvc::forceinline)
-[[msvc::forceinline]]
-#endif
-[[nodiscard]]
-constexpr auto get_value(T const& self) noexcept -> typename T::value_type const& {
-#ifndef NDEBUG
-    if (has_value(self) == false) [[unlikely]] {
-        terminate();
-    }
-#endif  // !defined(NDEBUG)
-    return self.ok_;
-}
-
-template<typename T>
-    requires (is_expected<T> || is_optional<T>)
-#if __has_cpp_attribute(__gnu__::__always_inline__)
-[[__gnu__::__always_inline__]]
-#elif __has_cpp_attribute(msvc::forceinline)
-[[msvc::forceinline]]
-#endif
-[[nodiscard]]
-constexpr auto get_value(T&& self) noexcept -> typename T::value_type&& {
-#ifndef NDEBUG
-    if (has_value(self) == false) [[unlikely]] {
-        terminate();
-    }
-#endif  // !defined(NDEBUG)
-    return ::std::move(self.ok_);
-}
-
-template<typename T>
-    requires (is_expected<T> || is_optional<T>)
-#if __has_cpp_attribute(__gnu__::__always_inline__)
-[[__gnu__::__always_inline__]]
-#elif __has_cpp_attribute(msvc::forceinline)
-[[msvc::forceinline]]
-#endif
-[[nodiscard]]
-constexpr auto get_value(T const&& self) noexcept -> typename T::value_type const&& {
-#ifndef NDEBUG
-    if (has_value(self) == false) [[unlikely]] {
-        terminate();
-    }
-#endif  // !defined(NDEBUG)
-    return ::std::move(self.ok_);
 }
 
 /**
@@ -603,47 +546,19 @@ constexpr auto value_or(T const&& self, U const&& val) noexcept -> typename T::v
  * @brief get the error value from an expected
  */
 template<is_expected T>
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
 [[nodiscard]]
-constexpr auto get_error(T& self) noexcept -> typename T::error_type& {
-#if !defined(NDEBUG)
-    if (has_value(self) == true) [[unlikely]] {
-        terminate();
+constexpr auto get_error(T&& self) noexcept -> decltype(auto) {
+    assert_false(has_value(self));
+    if constexpr (::std::is_lvalue_reference_v<T>) {
+        return self.fail_;
+    } else {
+        return ::std::move(self.fail_);
     }
-#endif  // !defined(NDEBUG)
-    return self.fail_;
-}
-
-template<is_expected T>
-[[nodiscard]]
-constexpr auto get_error(T const& self) noexcept -> typename T::error_type const& {
-#if !defined(NDEBUG)
-    if (has_value(self) == true) [[unlikely]] {
-        terminate();
-    }
-#endif  // !defined(NDEBUG)
-    return self.fail_;
-}
-
-template<is_expected T>
-[[nodiscard]]
-constexpr auto get_error(T&& self) noexcept -> typename T::error_type&& {
-#if !defined(NDEBUG)
-    if (has_value(self) == true) [[unlikely]] {
-        terminate();
-    }
-#endif  // !defined(NDEBUG)
-    return ::std::move(self.fail_);
-}
-
-template<is_expected T>
-[[nodiscard]]
-constexpr auto get_error(T const&& self) noexcept -> typename T::error_type const&& {
-#if !defined(NDEBUG)
-    if (has_value(self) == true) [[unlikely]] {
-        terminate();
-    }
-#endif  // !defined(NDEBUG)
-    return ::std::move(self.fail_);
 }
 
 }  // namespace ctb::exception

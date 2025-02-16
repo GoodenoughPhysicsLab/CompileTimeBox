@@ -5,7 +5,6 @@
 #endif  // __cpp_concepts < 201907L
 
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
 #include <type_traits>
 
@@ -161,7 +160,7 @@ struct string {
 
     [[nodiscard]]
     constexpr auto operator[](::std::size_t i) const noexcept {
-        assert(i < N);
+        exception::assert_true(i < N);
         return vector::get_value(this->str, i);
     }
 
@@ -293,16 +292,16 @@ constexpr auto utf16to8(string<Char, N> const& u16str) noexcept {
     for (::std::size_t i{}; i < N;) {
         auto u32chr = static_cast<char32_t>(vector::get_value(u16str.str, i++) & 0xffff);
         // clang-format off
-        assert(
+        exception::assert_true(
             u32chr < details::transcoding::TRAIL_SURROGATE_MIN
             || u32chr > details::transcoding::TRAIL_SURROGATE_MAX
         );
         if (u32chr >= details::transcoding::LEAD_SURROGATE_MIN
             && u32chr <= details::transcoding::LEAD_SURROGATE_MAX)
         {
-            assert(i < N);
+            exception::assert_true(i < N);
             auto const trail_surrogate = static_cast<char32_t>(vector::get_value(u16str.str, i++) & 0xffff);
-            assert(
+            exception::assert_true(
                 trail_surrogate >= details::transcoding::TRAIL_SURROGATE_MIN
                 && trail_surrogate <= details::transcoding::TRAIL_SURROGATE_MAX
             );
