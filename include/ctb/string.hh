@@ -81,9 +81,9 @@ concept is_utf32 =
     ::std::is_same_v<::std::remove_cv_t<Char>, char32_t>;
 
 template<typename Char, typename Char_r>
-concept is_same_encoding = details::transcoding::is_utf8<Char> && details::transcoding::is_utf8<Char_r> ||
-                           details::transcoding::is_utf16<Char> && details::transcoding::is_utf16<Char_r> ||
-                           details::transcoding::is_utf32<Char> && details::transcoding::is_utf32<Char_r>;
+concept is_same_encoding = (details::transcoding::is_utf8<Char> && details::transcoding::is_utf8<Char_r>) ||
+                           (details::transcoding::is_utf16<Char> && details::transcoding::is_utf16<Char_r>) ||
+                           (details::transcoding::is_utf32<Char> && details::transcoding::is_utf32<Char_r>);
 
 }  // namespace details::transcoding
 
@@ -110,14 +110,12 @@ struct string {
 
     constexpr string(Char const (&arr)[N]) noexcept
         : str{arr} {
-#ifndef NDEBUG
         for (size_t i{}; i < N; ++i) {
             if (arr[i] == '\0') {
                 return;
             }
         }
-        exception::terminate();
-#endif  // !defined(NDEBUG)
+        exception::terminate(); // your input is invalid
     }
 
     constexpr string(string<Char, N> const& other) noexcept
@@ -256,7 +254,7 @@ constexpr auto utf32to8(string<Char, N> const& u32str) noexcept {
     auto index = ::std::size_t{};
     for (auto u32chr : u32str) {
         // clang-format off
-        assert(
+        exception::assert_true(
             u32chr <= details::transcoding::CODE_POINT_MAX
             && (u32chr < details::transcoding::LEAD_SURROGATE_MIN
             || u32chr > details::transcoding::TRAIL_SURROGATE_MAX)
@@ -384,7 +382,7 @@ concept is_c_str = is_c_str_<::std::remove_cvref_t<T>>;
 template<typename T>
 concept can_concat = is_ctb_string<T> || is_c_str<T>;
 
-template<can_concat T>
+template<can_concat T, bool optimize = false>
 [[nodiscard]]
 constexpr auto concat_helper(T const& str) noexcept {
     if constexpr (is_ctb_string<T>) {
@@ -393,11 +391,11 @@ constexpr auto concat_helper(T const& str) noexcept {
         return string{str};
     } else {
         // InternalError: please bug-report
-#ifdef NDEBUG
-        exception::unreachable();
-#else  // ^^^ defined(NDEBUG) / vvv !defined(NDEBUG)
-        exception::terminate();
-#endif  // !defined(NDEBUG)
+        if constexpr (optimize) {
+            exception::unreachable();
+        } else {
+            exception::terminate();
+        }
     }
 }
 

@@ -1,8 +1,4 @@
-#ifdef NDEBUG
-    #undef NDEBUG
-#endif
-
-#include <cassert>
+#include <ctb/exception.hh>
 #include <ctb/string.hh>
 
 using namespace ctb::string;
@@ -119,17 +115,17 @@ consteval void test_metastr_in_template() noexcept {
 }
 
 inline void runtime_test_eq() noexcept {
-    assert(string{"abc"} == ::std::u8string{u8"abc"});
-    assert(string{"abc\0"} == ::std::u8string{u8"abc"});
-    assert(string{"abc"} != ::std::u8string{u8"ab"});
-    assert(string{"abc"} != ::std::u8string{u8"abcd"});
-    assert(string{"abc"} == ::std::u8string_view{u8"abc"});
-    assert(string{"abc\0\0"} == ::std::u8string_view{u8"abc"});
-    assert(string{"abc"} == ::std::u8string_view{u8"abc\0"});
-    assert(string{"abc"} != ::std::u8string_view{u8"ab"});
-    assert(string{"abc"} != ::std::u8string_view{u8"abcd"});
-    assert(::std::string_view{"ello,."} != string{"ello, "});
-    assert(
+    ctb::exception::assert_true(string{"abc"} == ::std::u8string{u8"abc"});
+    ctb::exception::assert_true(string{"abc\0"} == ::std::u8string{u8"abc"});
+    ctb::exception::assert_true(string{"abc"} != ::std::u8string{u8"ab"});
+    ctb::exception::assert_true(string{"abc"} != ::std::u8string{u8"abcd"});
+    ctb::exception::assert_true(string{"abc"} == ::std::u8string_view{u8"abc"});
+    ctb::exception::assert_true(string{"abc\0\0"} == ::std::u8string_view{u8"abc"});
+    ctb::exception::assert_true(string{"abc"} == ::std::u8string_view{u8"abc\0"});
+    ctb::exception::assert_true(string{"abc"} != ::std::u8string_view{u8"ab"});
+    ctb::exception::assert_true(string{"abc"} != ::std::u8string_view{u8"abcd"});
+    ctb::exception::assert_true(::std::string_view{"ello,."} != string{"ello, "});
+    ctb::exception::assert_true(
         concat("k", string{"aaa"}, ::std::string{"bbb"}, ::std::string_view{"ccc"})
         == ::std::string{"kaaabbbccc"}
     );
@@ -138,7 +134,7 @@ inline void runtime_test_eq() noexcept {
 inline void runtime_test_iter() noexcept {
     constexpr auto _1 = string{"abc"};
     for (auto ch : _1) {
-        assert(ch == 'a' || ch == 'b' || ch == 'c');
+        ctb::exception::assert_true(ch == 'a' || ch == 'b' || ch == 'c');
     }
 }
 

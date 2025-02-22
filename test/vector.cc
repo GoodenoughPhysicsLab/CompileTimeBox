@@ -1,8 +1,3 @@
-#ifdef NDEBUG
-    #undef NDEBUG
-#endif
-
-#include <cassert>
 #include <cstdint>
 #include <ctb/vector.hh>
 
@@ -65,7 +60,7 @@ inline void runtime_test_iter() noexcept {
     static_assert(*_1.begin() == 1u);
     static_assert(*(_1.end() - 1) == 3u);
     for (auto i : _1) {
-        assert(i == 1u || i == 2u || i == 3u);
+        ctb::exception::assert_true(i == 1u || i == 2u || i == 3u);
     }
 }
 

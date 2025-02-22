@@ -48,30 +48,32 @@ inline void unreachable() noexcept {
 #endif
 }
 
+template<bool optimize = false>
 #if __has_cpp_attribute(__gnu__::__always_inline__)
 [[__gnu__::__always_inline__]]
 #elif __has_cpp_attribute(msvc::forceinline)
 [[msvc::forceinline]]
 #endif
 constexpr void assert_true(bool cond) noexcept {
-#if !defined(NDEBUG)
-    if (cond == false) [[unlikely]] {
-        ::ctb::exception::terminate();
+    if constexpr (!optimize) {
+        if (cond == false) [[unlikely]] {
+            ::ctb::exception::terminate();
+        }
     }
-#endif  // !defined(NDEBUG)
 }
 
+template<bool optimize = false>
 #if __has_cpp_attribute(__gnu__::__always_inline__)
 [[__gnu__::__always_inline__]]
 #elif __has_cpp_attribute(msvc::forceinline)
 [[msvc::forceinline]]
 #endif
 constexpr void assert_false(bool cond) noexcept {
-#if !defined(NDEBUG)
-    if (cond == true) [[unlikely]] {
-        ::ctb::exception::terminate();
+    if constexpr (!optimize) {
+        if (cond == true) [[unlikely]] {
+            ::ctb::exception::terminate();
+        }
     }
-#endif  // !defined(NDEBUG)
 }
 
 inline constexpr struct nullopt_t {
@@ -478,7 +480,7 @@ constexpr auto has_value(T&& t) noexcept -> decltype(auto) {
  * @brief get value from optional or expected, if it is not, terminate the program
  * @param self: the optional or expected object
  */
-template<typename T>
+template<typename T, bool optimize = false>
     requires (is_expected<T> || is_optional<T>)
 #if __has_cpp_attribute(__gnu__::__always_inline__)
 [[__gnu__::__always_inline__]]
@@ -487,7 +489,7 @@ template<typename T>
 #endif
 [[nodiscard]]
 constexpr auto get_value(T&& self) noexcept -> decltype(auto) {
-    assert_true(has_value(self));
+    assert_true<optimize>(has_value(self));
     if constexpr (::std::is_lvalue_reference_v<T>) {
         return self.ok_;
     } else {
@@ -545,7 +547,7 @@ constexpr auto value_or(T const&& self, U const&& val) noexcept -> typename T::v
 /**
  * @brief get the error value from an expected
  */
-template<is_expected T>
+template<is_expected T, bool optimize = false>
 #if __has_cpp_attribute(__gnu__::__always_inline__)
 [[__gnu__::__always_inline__]]
 #elif __has_cpp_attribute(msvc::forceinline)
@@ -553,7 +555,7 @@ template<is_expected T>
 #endif
 [[nodiscard]]
 constexpr auto get_error(T&& self) noexcept -> decltype(auto) {
-    assert_false(has_value(self));
+    assert_false<optimize>(has_value(self));
     if constexpr (::std::is_lvalue_reference_v<T>) {
         return self.fail_;
     } else {
