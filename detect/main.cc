@@ -44,6 +44,12 @@
     #pragma message("[[Detect]] explicit-this-parameter: Failed")
 #endif
 
+#if __cpp_pack_indexing >= 202311L
+    #pragma message("[[Detect]] pack-indexing: Success")
+#else
+    #pragma message("[[Detect]] pack-indexing: Failed")
+#endif
+
 int main() noexcept {
     return 0;
 }
