@@ -150,7 +150,7 @@ struct optional {
 #endif
 
 #if __cpp_explicit_this_parameter >= 202110L
-    constexpr auto operator=(this optional self, nullopt_t const&) noexcept -> decltype(auto) {
+    constexpr auto operator=(this optional& self, nullopt_t const&) noexcept -> decltype(auto) {
         if (self.has_value_) {
             self.reset();
         }
@@ -172,7 +172,7 @@ struct optional {
     constexpr auto operator=(this optional& self, optional const& other) noexcept -> decltype(auto)
         requires (::std::is_copy_constructible_v<value_type>)
     {
-        self.val_ = other.ok_;
+        self.ok_ = other.ok_;
         self.has_value_ = other.has_value_;
         return (self);
     }
@@ -188,7 +188,7 @@ struct optional {
 
 #if __cpp_explicit_this_parameter >= 202110L
     constexpr auto operator=(this optional& self, optional&& other) noexcept -> decltype(auto) {
-        self.val_ = ::std::move(other.ok_);
+        self.ok_ = ::std::move(other.ok_);
         self.has_value_ = ::std::move(other.has_value_);
         return (self);
     }
@@ -449,16 +449,61 @@ struct expected {
         return (*this);
     }
 #endif
+
+    /**
+     * @brief get the error value from an expected
+     */
+    template<bool optimize = false>
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+    [[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+    [[msvc::forceinline]]
+#endif
+    [[nodiscard]]
+#if __cpp_explicit_this_parameter >= 202110L
+    constexpr auto error(this expected<Ok, Fail> const& self) noexcept -> decltype(auto) {
+        assert_false<optimize>(self.has_value_);
+        return self.fail_;
+    }
+#else
+    constexpr auto error() const& noexcept -> decltype(auto) {
+        assert_false<optimize>(this->has_value_);
+        return this->fail_;
+    }
+#endif
+
+    template<bool optimize = false>
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+    [[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+    [[msvc::forceinline]]
+#endif
+    [[nodiscard]]
+#if __cpp_explicit_this_parameter >= 202110L
+    constexpr auto error(this expected<Ok, Fail> const&& self) noexcept -> decltype(auto) {
+        assert_false<optimize>(self.has_value_);
+        return ::std::move(self.fail_);
+    }
+#else
+    constexpr auto error() const&& noexcept -> decltype(auto) {
+        assert_false<optimize>(this->has_value_);
+        return ::std::move(this->fail_);
+    }
+#endif
 };
 
+namespace details {
+
 template<typename T>
-constexpr bool is_expected_v = false;
+constexpr bool is_expected_ = false;
 
 template<typename Ok, typename Fail>
-constexpr bool is_expected_v<expected<Ok, Fail>> = true;
+constexpr bool is_expected_<expected<Ok, Fail>> = true;
+
+}  // namespace details
 
 template<typename T>
-concept is_expected = is_expected_v<::std::remove_cvref_t<T>>;
+concept is_expected = details::is_expected_<::std::remove_cvref_t<T>>;
 
 template<typename T>
     requires (is_expected<T> || is_optional<T>)
@@ -470,9 +515,9 @@ template<typename T>
 [[nodiscard]]
 constexpr auto has_value(T&& t) noexcept -> decltype(auto) {
     if constexpr (::std::is_lvalue_reference_v<T>) {
-        return t.has_value_;
+        return ::std::as_const(t.has_value_);
     } else {
-        return ::std::move(t.has_value_);
+        return ::std::move(::std::as_const(t.has_value_));
     }
 }
 
@@ -542,25 +587,6 @@ constexpr auto value_or(T const&& self, U const&& val) noexcept -> typename T::v
         return ::std::move(val);
     }
     return ::std::move(self.ok_);
-}
-
-/**
- * @brief get the error value from an expected
- */
-template<is_expected T, bool optimize = false>
-#if __has_cpp_attribute(__gnu__::__always_inline__)
-[[__gnu__::__always_inline__]]
-#elif __has_cpp_attribute(msvc::forceinline)
-[[msvc::forceinline]]
-#endif
-[[nodiscard]]
-constexpr auto get_error(T&& self) noexcept -> decltype(auto) {
-    assert_false<optimize>(has_value(self));
-    if constexpr (::std::is_lvalue_reference_v<T>) {
-        return self.fail_;
-    } else {
-        return ::std::move(self.fail_);
-    }
 }
 
 }  // namespace ctb::exception

@@ -28,7 +28,7 @@ consteval void test_expected() noexcept {
     static_assert(has_value(y) == false);
     static_assert(has_value(z) == true);
     static_assert(get_value(x) == 1);
-    static_assert(get_error(y) == 1);
+    static_assert(y.error() == 1);
     static_assert(value_or(x, 2) == 1);
     static_assert(value_or(y, 2) == 2);
     // static_assert(value_or(y, 2.5) == 2); // error, implicit conversion is not allowed
@@ -40,6 +40,7 @@ inline void test_optional_in_runtime() noexcept {
     assert_true(get_value(x) == 2);
     x.reset();
     assert_true(has_value(x) == false);
+    // has_value(x) = false; // this should be error
     x.emplace(5);
     assert_true(get_value(x) == 5);
 }
