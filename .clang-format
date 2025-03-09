@@ -9,14 +9,14 @@ AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
 IndentCaseLabels: false
 AllowShortCaseLabelsOnASingleLine: false
-SpacesBeforeTrailingComments: 2
+SpacesBeforeTrailingComments: 1
 BinPackParameters: true
 BinPackArguments: true
 IndentAccessModifiers: false
 AccessModifierOffset: -4
 AllowShortCompoundRequirementOnASingleLine: true
-PackConstructorInitializers: NextLineOnly
-AllowShortBlocksOnASingleLine: true
+PackConstructorInitializers: Never
+AllowShortBlocksOnASingleLine: Never
 
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false

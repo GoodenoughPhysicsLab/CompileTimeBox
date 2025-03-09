@@ -2,7 +2,7 @@
 
 #if __cpp_concepts < 201907L
     #error "`ctb` requires at least C++20"
-#endif  // __cpp_concepts < 201907L
+#endif // __cpp_concepts < 201907L
 
 #include <cstddef>
 #include <type_traits>
@@ -25,7 +25,7 @@ struct pack_indexing_before_cxx26_<0, First, Rest...> {
     using type = First;
 };
 
-#endif  // __cpp_pack_indexing < 202311L
+#endif // __cpp_pack_indexing < 202311L
 
 template<::std::size_t I, typename... Args>
 struct pack_indexing_ {
@@ -38,9 +38,9 @@ struct pack_indexing_ {
     #if defined(__clang__)
         #pragma clang diagnostic pop
     #endif
-#else  // ^^^ __cpp_pack_indexing >= 202311L / vvv __cpp_pack_indexing < 202311L
+#else // ^^^ __cpp_pack_indexing >= 202311L / vvv __cpp_pack_indexing < 202311L
     using type = typename pack_indexing_before_cxx26_<I, Args...>::type;
-#endif  // __cpp_pack_indexing < 202311L
+#endif // __cpp_pack_indexing < 202311L
 };
 
 template<::std::size_t I, typename... Args>
@@ -67,7 +67,7 @@ constexpr auto get_tuple_impl_(::std::index_sequence<Index...>) noexcept {
     return pass_type_<tuple_impl_>();
 }
 
-}  // namespace details
+} // namespace details
 
 template<typename... Args>
 struct tuple : ::std::remove_cvref_t<typename decltype(details::get_tuple_impl_<Args...>(
@@ -77,12 +77,22 @@ template<>
 struct tuple<> {};
 
 template<::std::size_t I, typename... Args>
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
 [[nodiscard]]
 constexpr auto get(tuple<Args...> const& self) noexcept -> decltype(auto) {
     return static_cast<details::tuple_element_impl_<I, Args...> const&>(self).val_;
 }
 
 template<::std::size_t I, typename... Args>
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif __has_cpp_attribute(msvc::forceinline)
+[[msvc::forceinline]]
+#endif
 [[nodiscard]]
 constexpr auto get(tuple<Args...> const&& self) noexcept -> decltype(auto) {
     return ::std::move(static_cast<details::tuple_element_impl_<I, Args...> const&&>(self).val_);
@@ -99,12 +109,12 @@ constexpr bool is_tuple_ = false;
 template<typename... Args>
 constexpr bool is_tuple_<tuple<Args...>> = true;
 
-}  // namespace details
+} // namespace details
 
 template<typename T>
 concept is_tuple = details::is_tuple_<::std::remove_cvref_t<T>>;
 
-}  // namespace ctb::tuple
+} // namespace ctb::tuple
 
 template<::std::size_t I, typename... Args>
 struct std::tuple_element<I, ::ctb::tuple::tuple<Args...>> {

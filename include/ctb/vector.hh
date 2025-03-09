@@ -2,7 +2,7 @@
 
 #if __cpp_concepts < 201907L
     #error "`ctb` requires at least C++20"
-#endif  // __cpp_concepts < 201907L
+#endif // __cpp_concepts < 201907L
 
 #include <algorithm>
 #include <cstddef>
@@ -93,7 +93,7 @@ constexpr bool is_vector_ = false;
 template<typename T, ::std::size_t N>
 constexpr bool is_vector_<vector<T, N>> = true;
 
-}
+} // namespace details
 
 template<typename T>
 concept is_vector = details::is_vector_<::std::remove_cvref_t<T>>;
@@ -131,4 +131,4 @@ constexpr auto get_value(T&& self, ::std::size_t index) noexcept -> decltype(aut
     }
 }
 
-}  // namespace ctb::vector
+} // namespace ctb::vector

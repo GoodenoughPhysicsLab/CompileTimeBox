@@ -2,7 +2,7 @@
 
 #if __cpp_concepts < 201907L
     #error "`ctb` requires at least C++20"
-#endif  // __cpp_concepts < 201907L
+#endif // __cpp_concepts < 201907L
 
 #include <algorithm>
 #include <cstddef>
@@ -14,7 +14,7 @@
 #ifndef CTB_N_STL_SUPPORT
     #include <string>
     #include <string_view>
-#endif  // !defined(CTB_N_STL_SUPPORT)
+#endif // !defined(CTB_N_STL_SUPPORT)
 
 namespace ctb::string {
 
@@ -52,9 +52,9 @@ constexpr auto CODE_POINT_MAX = char32_t{0x0010ffffu};
 template<typename Char>
 concept is_utf8 =
 #if __cpp_char8_t >= 201811L
-    ::std::is_same_v<::std::remove_cv_t<Char>, char8_t> ||  // unprintable utf-8 type
-#endif  // __cpp_char8_t >= 201811L
-    ::std::is_same_v<::std::remove_cv_t<Char>, char>;  // printable utf-8 type
+    ::std::is_same_v<::std::remove_cv_t<Char>, char8_t> || // unprintable utf-8 type
+#endif // __cpp_char8_t >= 201811L
+    ::std::is_same_v<::std::remove_cv_t<Char>, char>; // printable utf-8 type
 
 /* Assume encoding of char16_t and
  * encoding of wchar_t(on windows) is utf-16
@@ -65,7 +65,7 @@ template<typename Char>
 concept is_utf16 =
 #ifdef _WIN32
     ::std::is_same_v<::std::remove_cv_t<Char>, wchar_t> ||
-#endif  // defined(_WIN32)
+#endif // defined(_WIN32)
     ::std::is_same_v<::std::remove_cv_t<Char>, char16_t>;
 
 /* Assume encoding of char32_t and
@@ -77,7 +77,7 @@ template<typename Char>
 concept is_utf32 =
 #ifndef _WIN32
     ::std::is_same_v<::std::remove_cv_t<Char>, wchar_t> ||
-#endif  // !defined(_WIN32)
+#endif // !defined(_WIN32)
     ::std::is_same_v<::std::remove_cv_t<Char>, char32_t>;
 
 template<typename Char, typename Char_r>
@@ -85,7 +85,7 @@ concept is_same_encoding = (details::transcoding::is_utf8<Char> && details::tran
                            (details::transcoding::is_utf16<Char> && details::transcoding::is_utf16<Char_r>) ||
                            (details::transcoding::is_utf32<Char> && details::transcoding::is_utf32<Char_r>);
 
-}  // namespace details::transcoding
+} // namespace details::transcoding
 
 /* class string
  *
@@ -200,7 +200,7 @@ struct string {
 
 #ifndef CTB_N_STL_SUPPORT
     template<is_char Char_r>
-    [[nodiscard]]  // TODO bugfix: "abc\0abc" == "abc"
+    [[nodiscard]] // TODO bugfix: "abc\0abc" == "abc"
     constexpr bool
     operator==(::std::basic_string_view<Char_r> const& other) const noexcept {
         if (N < other.size()) {
@@ -241,7 +241,7 @@ struct string {
     constexpr operator ::std::basic_string_view<Char>() const noexcept {
         return ::std::basic_string_view<Char>{str.data(), N - 1};
     }
-#endif  // !defined(CTB_N_STL_SUPPORT)
+#endif // !defined(CTB_N_STL_SUPPORT)
 };
 
 namespace details::transcoding {
@@ -327,7 +327,7 @@ constexpr auto utf16to8(string<Char, N> const& u16str) noexcept {
     return string{tmp_};
 }
 
-}  // namespace details::transcoding
+} // namespace details::transcoding
 
 /* Convert a string to another encoding.
  * Assume char, char8_t -> utf-8
@@ -363,7 +363,7 @@ constexpr bool is_ctb_string_ = false;
 template<is_char Char, ::std::size_t N>
 constexpr bool is_ctb_string_<string<Char, N>> = true;
 
-}  // namespace details
+} // namespace details
 
 template<typename T>
 concept is_ctb_string = details::is_ctb_string_<::std::remove_cvref_t<T>>;
@@ -399,7 +399,7 @@ constexpr auto concat_helper(T const& str) noexcept {
     }
 }
 
-}  // namespace details
+} // namespace details
 
 template<details::can_concat... T>
 [[nodiscard]]
@@ -439,7 +439,7 @@ constexpr auto concat_helper2(T const& str) noexcept {
     }
 }
 
-}  // namespace details
+} // namespace details
 
 template<typename... Strs>
     requires ((!details::can_concat<Strs> || ...) &&
@@ -449,7 +449,7 @@ constexpr auto concat(Strs const&... strs) noexcept {
     return (details::concat_helper2(strs) + ...);
 }
 
-#endif  // !defined(CTB_N_STL_SUPPORT)
+#endif // !defined(CTB_N_STL_SUPPORT)
 
 namespace details {
 
@@ -464,7 +464,7 @@ constexpr ::std::size_t get_first_l0_(string<Char, N> str) noexcept {
     exception::terminate();
 }
 
-}  // namespace details
+} // namespace details
 
 template<string str>
 [[nodiscard]]
@@ -522,4 +522,4 @@ constexpr exception::optional<::std::size_t> find() noexcept {
     }
 }
 
-}  // namespace ctb::string
+} // namespace ctb::string

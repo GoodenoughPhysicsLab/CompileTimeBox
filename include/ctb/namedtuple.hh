@@ -2,7 +2,7 @@
 
 #if __cpp_concepts < 201907L
     #error "`ctb` requires at least C++20"
-#endif  // __cpp_concepts < 201907L
+#endif // __cpp_concepts < 201907L
 
 #include <tuple>
 #include <type_traits>
@@ -65,7 +65,7 @@ consteval ::std::size_t get_size() noexcept {
     return get_size_<Names>();
 }
 
-}  // namespace ctb::namedtuple::details
+} // namespace ctb::namedtuple::details
 
 namespace ctb::namedtuple {
 
@@ -81,6 +81,7 @@ struct namedtuple {
     constexpr namedtuple(Args&&... args) {
         this->tuple = ::std::make_tuple(::std::forward<Args>(args)...);
     }
+
     constexpr ~namedtuple() noexcept = default;
 };
 
@@ -116,7 +117,7 @@ constexpr auto get(namedtuple<Names, Args...> nt) noexcept {
     return ::std::get<N>(nt.tuple);
 }
 
-}  // namespace ctb::namedtuple
+} // namespace ctb::namedtuple
 
 /* C++17 structured binding support
  */
@@ -131,4 +132,4 @@ struct tuple_element<N, ::ctb::namedtuple::namedtuple<Names, Args...>> {
     using type = decltype(::std::get<N>(::std::declval<::ctb::namedtuple::namedtuple<Names, Args...>>().tuple));
 };
 
-}  // namespace std
+} // namespace std

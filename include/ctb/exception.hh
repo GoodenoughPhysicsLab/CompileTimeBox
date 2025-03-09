@@ -2,7 +2,7 @@
 
 #if __cpp_concepts < 201907L
     #error "`ctb` requires at least C++20"
-#endif  // __cpp_concepts < 201907L
+#endif // __cpp_concepts < 201907L
 
 #include <new>
 #include <utility>
@@ -41,9 +41,9 @@ inline void terminate() noexcept {
 #endif
 [[noreturn]]
 inline void unreachable() noexcept {
-#if defined(_MSC_VER) && !defined(__clang__)  // MSVC
+#if defined(_MSC_VER) && !defined(__clang__) // MSVC
     __assume(false);
-#else  // GCC, Clang
+#else // GCC, Clang
     __builtin_unreachable();
 #endif
 }
@@ -109,23 +109,27 @@ struct optional {
 
     constexpr optional(value_type const& val) noexcept
         requires (::std::is_copy_constructible_v<value_type>)
-        : ok_{val}, has_value_{true} {
+        : ok_{val},
+          has_value_{true} {
     }
 
     constexpr optional(value_type&& val) noexcept
         requires (::std::is_move_constructible_v<value_type>)
-        : ok_{::std::move(val)}, has_value_{true} {
+        : ok_{::std::move(val)},
+          has_value_{true} {
     }
 
     constexpr optional(nullopt_t const&) noexcept
-        : fail_{}, has_value_{false} {
+        : fail_{},
+          has_value_{false} {
     }
 
     constexpr optional(nullopt_t const&&) noexcept = delete;
 
     constexpr optional(optional const& other) noexcept
         requires (::std::is_copy_constructible_v<value_type>)
-        : ok_{other.ok_}, has_value_{other.has_value_} {
+        : ok_{other.ok_},
+          has_value_{other.has_value_} {
     }
 
     constexpr optional(optional const&& other) noexcept {
@@ -246,7 +250,7 @@ constexpr bool is_optional_ = false;
 template<typename T>
 constexpr bool is_optional_<optional<T>> = true;
 
-}  // namespace details
+} // namespace details
 
 template<typename T>
 concept is_optional = details::is_optional_<::std::remove_cvref_t<T>>;
@@ -302,22 +306,26 @@ struct expected {
 
     constexpr expected(Ok const& ok) noexcept
         requires (::std::is_copy_constructible_v<Ok>)
-        : ok_{ok}, has_value_{true} {
+        : ok_{ok},
+          has_value_{true} {
     }
 
     constexpr expected(Ok&& ok) noexcept
         requires (::std::is_move_constructible_v<Ok>)
-        : ok_{::std::move(ok)}, has_value_{true} {
+        : ok_{::std::move(ok)},
+          has_value_{true} {
     }
 
     constexpr expected(unexpected<Fail> const& fail) noexcept
         requires (::std::is_copy_constructible_v<Fail>)
-        : fail_{fail.val_}, has_value_{false} {
+        : fail_{fail.val_},
+          has_value_{false} {
     }
 
     constexpr expected(unexpected<Fail>&& fail) noexcept
         requires (::std::is_move_constructible_v<Fail>)
-        : fail_{::std::move(fail.val_)}, has_value_{false} {
+        : fail_{::std::move(fail.val_)},
+          has_value_{false} {
     }
 
     constexpr expected(expected<Ok, Fail> const& other) noexcept
@@ -500,7 +508,7 @@ constexpr bool is_expected_ = false;
 template<typename Ok, typename Fail>
 constexpr bool is_expected_<expected<Ok, Fail>> = true;
 
-}  // namespace details
+} // namespace details
 
 template<typename T>
 concept is_expected = details::is_expected_<::std::remove_cvref_t<T>>;
@@ -589,4 +597,4 @@ constexpr auto value_or(T const&& self, U const&& val) noexcept -> typename T::v
     return ::std::move(self.ok_);
 }
 
-}  // namespace ctb::exception
+} // namespace ctb::exception
