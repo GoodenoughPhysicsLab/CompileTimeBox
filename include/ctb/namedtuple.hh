@@ -4,7 +4,7 @@
     #error "`ctb` requires at least C++20"
 #endif // __cpp_concepts < 201907L
 
-#include <tuple>
+#include "tuple.hh"
 #include <type_traits>
 
 #ifdef CTB_N_STL_SUPPORT
@@ -76,10 +76,17 @@ template<details::is_names Names, typename... Args>
     requires (details::get_size<Names>() == sizeof...(Args))
 struct namedtuple {
     using names = Names;
-    ::std::tuple<Args...> tuple;
+    tuple::tuple<Args...> tuple;
 
     constexpr namedtuple(Args&&... args) {
-        this->tuple = ::std::make_tuple(::std::forward<Args>(args)...);
+#if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wmissing-braces"
+#endif
+        this->tuple = tuple::tuple{::std::forward<Args>(args)...};
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#endif
     }
 
     constexpr ~namedtuple() noexcept = default;
@@ -101,7 +108,7 @@ template<string::string str, ::std::size_t index = 0, details::is_names Names, t
 constexpr auto get(namedtuple<Names, Args...> nt) noexcept {
     static_assert(index < details::get_size<Names>(), "index out of range");
     if constexpr (details::get_name<index, Names>() == str) {
-        return ::std::get<index>(nt.tuple);
+        return tuple::get<index>(nt.tuple);
     } else {
         return get<str, index + 1>(nt);
     }
@@ -114,22 +121,18 @@ constexpr auto get(namedtuple<Names, Args...> nt) noexcept {
 template<::std::size_t N, details::is_names Names, typename... Args>
 [[nodiscard]]
 constexpr auto get(namedtuple<Names, Args...> nt) noexcept {
-    return ::std::get<N>(nt.tuple);
+    return tuple::get<N>(nt.tuple);
 }
 
 } // namespace ctb::namedtuple
 
 /* C++17 structured binding support
  */
-namespace std {
-
 template<::ctb::namedtuple::details::is_names Names, typename... Args>
-struct tuple_size<::ctb::namedtuple::namedtuple<Names, Args...>>
+struct std::tuple_size<::ctb::namedtuple::namedtuple<Names, Args...>>
     : public ::std::integral_constant<::std::size_t, ::ctb::namedtuple::details::get_size<Names>()> {};
 
 template<::std::size_t N, ::ctb::namedtuple::details::is_names Names, typename... Args>
-struct tuple_element<N, ::ctb::namedtuple::namedtuple<Names, Args...>> {
-    using type = decltype(::std::get<N>(::std::declval<::ctb::namedtuple::namedtuple<Names, Args...>>().tuple));
+struct std::tuple_element<N, ::ctb::namedtuple::namedtuple<Names, Args...>> {
+    using type = decltype(::ctb::tuple::get<N>(::std::declval<::ctb::namedtuple::namedtuple<Names, Args...>>().tuple));
 };
-
-} // namespace std
