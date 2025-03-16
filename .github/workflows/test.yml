@@ -15,6 +15,7 @@ jobs:
 
     - name: Detect features
       run: |
+        cmake --version
         cmake -S detect -B detect-build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=23 -Wno-dev
         cmake --build detect-build --config Debug
 
