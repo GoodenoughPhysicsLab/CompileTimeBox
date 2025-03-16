@@ -382,7 +382,7 @@ concept is_c_str = is_c_str_<::std::remove_cvref_t<T>>;
 template<typename T>
 concept can_concat = is_ctb_string<T> || is_c_str<T>;
 
-template<can_concat T, bool optimize = false>
+template<can_concat T, bool ndebug = false>
 [[nodiscard]]
 constexpr auto concat_helper(T const& str) noexcept {
     if constexpr (is_ctb_string<T>) {
@@ -391,11 +391,7 @@ constexpr auto concat_helper(T const& str) noexcept {
         return string{str};
     } else {
         // InternalError: please bug-report
-        if constexpr (optimize) {
-            exception::unreachable();
-        } else {
-            exception::terminate();
-        }
+        ::ctb::exception::unreachable<ndebug>();
     }
 }
 

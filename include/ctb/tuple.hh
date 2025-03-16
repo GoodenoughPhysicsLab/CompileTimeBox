@@ -5,7 +5,7 @@
 #endif // __cpp_concepts < 201907L
 
 #include <cstddef>
-#include <type_traits>
+#include <concepts>
 #include <utility>
 
 namespace ctb::tuple {
@@ -40,7 +40,7 @@ struct pack_indexing_ {
     #endif
 #else // ^^^ __cpp_pack_indexing >= 202311L / vvv __cpp_pack_indexing < 202311L
     using type = typename pack_indexing_before_cxx26_<I, Args...>::type;
-#endif // __cpp_pack_indexing < 202311L
+#endif // ^^^ __cpp_pack_indexing < 202311L
 };
 
 template<::std::size_t I, typename... Args>
@@ -49,6 +49,11 @@ using pack_indexing_t_ = typename pack_indexing_<I, Args...>::type;
 
 template<::std::size_t I, typename T>
 struct tuple_element_impl_ {
+#if __has_cpp_attribute(msvc::no_unique_address)
+    [[msvc::no_unique_address]]
+#elif __has_cpp_attribute(no_unique_address)
+    [[no_unique_address]]
+#endif
     T val_;
 };
 
@@ -63,13 +68,13 @@ template<typename... Args, ::std::size_t... Index>
 constexpr auto get_tuple_impl_(::std::index_sequence<Index...>) noexcept {
     struct tuple_impl_ : tuple_element_impl_<Index, Args>... {};
 
-    return pass_type_<tuple_impl_>();
+    return ::ctb::tuple::details::pass_type_<tuple_impl_>();
 }
 
 } // namespace details
 
 template<typename... Args>
-struct tuple : ::std::remove_cvref_t<typename decltype(details::get_tuple_impl_<Args...>(
+struct tuple : ::std::remove_cvref_t<typename decltype(::ctb::tuple::details::get_tuple_impl_<Args...>(
                    ::std::make_index_sequence<sizeof...(Args)>{}))::type> {};
 
 template<>
@@ -85,8 +90,10 @@ template<::std::size_t I, typename... Args>
 [[msvc::forceinline]]
 #endif
 [[nodiscard]]
-constexpr auto get(tuple<Args...> const& self) noexcept -> decltype(auto) {
-    return static_cast<details::tuple_element_impl_<I, details::pack_indexing_t_<I, Args...>> const&>(self).val_;
+constexpr auto&& get(::ctb::tuple::tuple<Args...> const& self) noexcept {
+    return static_cast<::ctb::tuple::details::tuple_element_impl_<
+        I, ::ctb::tuple::details::pack_indexing_t_<I, Args...>> const&>(self)
+        .val_;
 }
 
 template<::std::size_t I, typename... Args>
@@ -96,47 +103,52 @@ template<::std::size_t I, typename... Args>
 [[msvc::forceinline]]
 #endif
 [[nodiscard]]
-constexpr auto get(tuple<Args...> const&& self) noexcept -> decltype(auto) {
+constexpr auto&& get(::ctb::tuple::tuple<Args...> const&& self) noexcept {
     return ::std::move(
-        static_cast<details::tuple_element_impl_<I, details::pack_indexing_t_<I, Args...>> const&&>(self).val_);
+        static_cast<
+            ::ctb::tuple::details::tuple_element_impl_<I, ::ctb::tuple::details::pack_indexing_t_<I, Args...>> const&&>(
+            self)
+            .val_);
 }
 
 namespace details {
 
 template<typename T, ::std::size_t I, typename Current, typename... Args>
 constexpr auto get_tuple_element_by_type_() noexcept {
-    if constexpr (::std::is_same_v<T, Current>) {
-        return pass_type_<tuple_element_impl_<I, Current>>{};
+    if constexpr (::std::same_as<T, Current>) {
+        return ::ctb::tuple::details::pass_type_<tuple_element_impl_<I, Current>>{};
     } else {
-        return get_tuple_element_by_type_<T, I + 1, Args...>();
+        return ::ctb::tuple::details::get_tuple_element_by_type_<T, I + 1, Args...>();
     }
 }
 
 } // namespace details
 
 template<typename T, typename... Args>
-    requires ((::std::is_same_v<T, Args> + ...) == 1)
+    requires ((::std::same_as<T, Args> + ...) == 1)
 #if __has_cpp_attribute(__gnu__::__always_inline__)
 [[__gnu__::__always_inline__]]
 #elif __has_cpp_attribute(msvc::forceinline)
 [[msvc::forceinline]]
 #endif
 [[nodiscard]]
-constexpr auto get(tuple<Args...> const& self) noexcept -> decltype(auto) {
-    return static_cast<decltype(details::get_tuple_element_by_type_<T, 0, Args...>())::type const&>(self).val_;
+constexpr auto&& get(::ctb::tuple::tuple<Args...> const& self) noexcept {
+    return static_cast<decltype(::ctb::tuple::details::get_tuple_element_by_type_<T, 0, Args...>())::type const&>(self)
+        .val_;
 }
 
 template<typename T, typename... Args>
-    requires ((::std::is_same_v<T, Args> + ...) == 1)
+    requires ((::std::same_as<T, Args> + ...) == 1)
 #if __has_cpp_attribute(__gnu__::__always_inline__)
 [[__gnu__::__always_inline__]]
 #elif __has_cpp_attribute(msvc::forceinline)
 [[msvc::forceinline]]
 #endif
 [[nodiscard]]
-constexpr auto get(tuple<Args...> const&& self) noexcept -> decltype(auto) {
+constexpr auto&& get(::ctb::tuple::tuple<Args...> const&& self) noexcept {
     return ::std::move(
-        static_cast<decltype(details::get_tuple_element_by_type_<T, 0, Args...>())::type const&&>(self).val_);
+        static_cast<decltype(::ctb::tuple::details::get_tuple_element_by_type_<T, 0, Args...>())::type const&&>(self)
+            .val_);
 }
 
 namespace details {
@@ -150,7 +162,20 @@ constexpr bool is_tuple_<tuple<Args...>> = true;
 } // namespace details
 
 template<typename T>
-concept is_tuple = details::is_tuple_<::std::remove_cvref_t<T>>;
+concept is_tuple = ::ctb::tuple::details::is_tuple_<::std::remove_cvref_t<T>>;
+
+template<typename... Args>
+[[nodiscard]]
+constexpr auto forward_as_tuple(Args&&... args) {
+#if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wmissing-braces"
+#endif
+    return ::ctb::tuple::tuple<Args&&...>(::std::forward<Args>(args)...);
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#endif
+}
 
 } // namespace ctb::tuple
 
