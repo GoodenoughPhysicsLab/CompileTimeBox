@@ -23,7 +23,7 @@ else()
     endif()
 endif()
 
-foreach(a_test IN LISTS TEST_SRCS)
+foreach (a_test IN LISTS TEST_SRCS)
     get_filename_component(filename ${a_test} NAME_WE)
     add_executable(${filename} ${a_test})
     add_test(NAME ${filename} COMMAND ${CMAKE_BINARY_DIR}/${filename})

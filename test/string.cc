@@ -104,7 +104,7 @@ consteval void test_reduce_trailing_zero() noexcept {
 consteval void test_find() noexcept {
     constexpr auto _1 = string{"Hello, World!"};
     constexpr auto _2 = string{"World"};
-    static_assert(ctb::exception::get_value(find<_1, _2>()) == 7);
+    static_assert(find<_1, _2>().value() == 7);
 }
 
 template<string Str>

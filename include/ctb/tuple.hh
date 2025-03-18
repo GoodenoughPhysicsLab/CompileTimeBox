@@ -7,45 +7,11 @@
 #include <cstddef>
 #include <concepts>
 #include <utility>
+#include "utils.hh"
 
 namespace ctb::tuple {
 
 namespace details {
-
-#if __cpp_pack_indexing < 202311L
-
-template<::std::size_t I, typename First, typename... Rest>
-    requires (I <= sizeof...(Rest))
-struct pack_indexing_before_cxx26_ {
-    using type = typename pack_indexing_before_cxx26_<I - 1, Rest...>::type;
-};
-
-template<typename First, typename... Rest>
-struct pack_indexing_before_cxx26_<0, First, Rest...> {
-    using type = First;
-};
-
-#endif // __cpp_pack_indexing < 202311L
-
-template<::std::size_t I, typename... Args>
-struct pack_indexing_ {
-#if __cpp_pack_indexing >= 202311L
-    #if defined(__clang__)
-        #pragma clang diagnostic push
-        #pragma clang diagnostic ignored "-Wc++26-extensions"
-    #endif
-    using type = Args...[I];
-    #if defined(__clang__)
-        #pragma clang diagnostic pop
-    #endif
-#else // ^^^ __cpp_pack_indexing >= 202311L / vvv __cpp_pack_indexing < 202311L
-    using type = typename pack_indexing_before_cxx26_<I, Args...>::type;
-#endif // ^^^ __cpp_pack_indexing < 202311L
-};
-
-template<::std::size_t I, typename... Args>
-    requires (I < sizeof...(Args))
-using pack_indexing_t_ = typename pack_indexing_<I, Args...>::type;
 
 template<::std::size_t I, typename T>
 struct tuple_element_impl_ {
@@ -57,21 +23,16 @@ struct tuple_element_impl_ {
     T val_;
 };
 
-template<typename T>
-struct pass_type_ {
-    using type = T;
-};
-
 template<typename... Args, ::std::size_t... Index>
     requires (sizeof...(Args) == sizeof...(Index))
 [[nodiscard]]
 constexpr auto get_tuple_impl_(::std::index_sequence<Index...>) noexcept {
     struct tuple_impl_ : tuple_element_impl_<Index, Args>... {};
 
-    return ::ctb::tuple::details::pass_type_<tuple_impl_>();
+    return ::ctb::utils::pass_type<tuple_impl_>();
 }
 
-} // namespace details
+}
 
 template<typename... Args>
 struct tuple : ::std::remove_cvref_t<typename decltype(::ctb::tuple::details::get_tuple_impl_<Args...>(
@@ -92,7 +53,7 @@ template<::std::size_t I, typename... Args>
 [[nodiscard]]
 constexpr auto&& get(::ctb::tuple::tuple<Args...> const& self) noexcept {
     return static_cast<::ctb::tuple::details::tuple_element_impl_<
-        I, ::ctb::tuple::details::pack_indexing_t_<I, Args...>> const&>(self)
+        I, ::ctb::utils::pack_indexing_t<I, Args...>> const&>(self)
         .val_;
 }
 
@@ -106,7 +67,7 @@ template<::std::size_t I, typename... Args>
 constexpr auto&& get(::ctb::tuple::tuple<Args...> const&& self) noexcept {
     return ::std::move(
         static_cast<
-            ::ctb::tuple::details::tuple_element_impl_<I, ::ctb::tuple::details::pack_indexing_t_<I, Args...>> const&&>(
+            ::ctb::tuple::details::tuple_element_impl_<I, ::ctb::utils::pack_indexing_t<I, Args...>> const&&>(
             self)
             .val_);
 }
@@ -116,7 +77,7 @@ namespace details {
 template<typename T, ::std::size_t I, typename Current, typename... Args>
 constexpr auto get_tuple_element_by_type_() noexcept {
     if constexpr (::std::same_as<T, Current>) {
-        return ::ctb::tuple::details::pass_type_<tuple_element_impl_<I, Current>>{};
+        return ::ctb::utils::pass_type<tuple_element_impl_<I, Current>>{};
     } else {
         return ::ctb::tuple::details::get_tuple_element_by_type_<T, I + 1, Args...>();
     }
@@ -181,7 +142,7 @@ constexpr auto forward_as_tuple(Args&&... args) {
 
 template<::std::size_t I, typename... Args>
 struct std::tuple_element<I, ::ctb::tuple::tuple<Args...>> {
-    using type = ::ctb::tuple::details::pack_indexing_t_<I, Args...>;
+    using type = ::ctb::utils::pack_indexing_t<I, Args...>;
 };
 
 template<typename... Args>
