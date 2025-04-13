@@ -367,40 +367,44 @@ public:
         requires (::std::same_as<U, value_type>)
     [[nodiscard]]
     constexpr auto value_or(U& val) & noexcept -> value_type& {
-        if (this->has_value() == false) [[unlikely]] {
+        if (this->has_value() == false) {
             return val;
+        } else {
+            return this->ok_;
         }
-        return this->ok_;
     }
 
     template<typename U>
         requires (::std::same_as<U, value_type>)
     [[nodiscard]]
     constexpr auto value_or(U const& val) const& noexcept -> value_type const& {
-        if (this->has_value() == false) [[unlikely]] {
+        if (this->has_value() == false) {
             return val;
+        } else {
+            return this->ok_;
         }
-        return this->ok_;
     }
 
     template<typename U>
         requires (::std::same_as<U, value_type>)
     [[nodiscard]]
     constexpr auto value_or(U&& val) && noexcept -> value_type&& {
-        if (this->has_value() == false) [[unlikely]] {
+        if (this->has_value() == false) {
             return ::std::move(val);
+        } else {
+            return ::std::move(this->ok_);
         }
-        return ::std::move(this->ok_);
     }
 
     template<typename U>
         requires (::std::same_as<U, value_type>)
     [[nodiscard]]
     constexpr auto value_or(U const&& val) const&& noexcept -> value_type const&& {
-        if (this->has_value() == false) [[unlikely]] {
+        if (this->has_value() == false) {
             return ::std::move(val);
+        } else {
+            return ::std::move(this->ok_);
         }
-        return ::std::move(this->ok_);
     }
 };
 
